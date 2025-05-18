@@ -435,10 +435,10 @@ export default async function Home() {
             interviews with HireGenie.io.
           </p>
           <Link
-            href="#waitlist"
+            href="#try-it-now"
             className="inline-flex items-center px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Join Waitlist
+            Try It Now
             <ArrowUpRight className="ml-2 w-4 h-4" />
           </Link>
         </div>
