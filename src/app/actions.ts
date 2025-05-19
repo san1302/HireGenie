@@ -9,7 +9,7 @@ import { createClient } from "../../supabase/server";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const fullName = formData.get("full_name")?.toString() || '';
+  const fullName = formData.get("full_name")?.toString() || "";
   const supabase = await createClient();
 
   if (!email || !password) {
@@ -20,14 +20,17 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { data: { user }, error } = await supabase.auth.signUp({
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
         email: email,
-      }
+      },
     },
   });
 
@@ -38,23 +41,21 @@ export const signUpAction = async (formData: FormData) => {
 
   if (user) {
     try {
-      const { error: updateError } = await supabase
-        .from('users')
-        .insert({
-          id: user.id,
-          name: fullName,
-          full_name: fullName,
-          email: email,
-          user_id: user.id,
-          token_identifier: user.id,
-          created_at: new Date().toISOString()
-        });
+      const { error: updateError } = await supabase.from("users").insert({
+        id: user.id,
+        name: fullName,
+        full_name: fullName,
+        email: email,
+        user_id: user.id,
+        token_identifier: user.id,
+        created_at: new Date().toISOString(),
+      });
 
       if (updateError) {
-        console.error('Error updating user profile:', updateError);
+        console.error("Error updating user profile:", updateError);
       }
     } catch (err) {
-      console.error('Error in user profile creation:', err);
+      console.error("Error in user profile creation:", err);
     }
   }
 
@@ -120,7 +121,7 @@ export const resetPasswordAction = async (formData: FormData) => {
   const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!password || !confirmPassword) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
       "/protected/reset-password",
       "Password and confirm password are required",
@@ -128,7 +129,7 @@ export const resetPasswordAction = async (formData: FormData) => {
   }
 
   if (password !== confirmPassword) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
       "/dashboard/reset-password",
       "Passwords do not match",
@@ -140,14 +141,18 @@ export const resetPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
       "/dashboard/reset-password",
       "Password update failed",
     );
   }
 
-  encodedRedirect("success", "/protected/reset-password", "Password updated");
+  return encodedRedirect(
+    "success",
+    "/protected/reset-password",
+    "Password updated",
+  );
 };
 
 export const signOutAction = async () => {
@@ -167,63 +172,148 @@ export const checkoutSessionAction = async ({
   customerEmail?: string;
   metadata?: Record<string, string>;
 }) => {
-  const result = await api.checkouts.create({
-    productPriceId,
-    successUrl,
-    customerEmail,
-    metadata,
-  });
+  try {
+    const result = await api.checkouts.create({
+      productPriceId,
+      successUrl,
+      customerEmail,
+      metadata,
+    });
 
-  return result;
-}
+    return { success: true, ...result };
+  } catch (error) {
+    console.error("Error creating checkout session:", error);
+    return { success: false, error: "Failed to create checkout session" };
+  }
+};
 
 export const checkUserSubscription = async (userId: string) => {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .single();
+    const { data: subscription, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .single();
 
-  if (error) {
-    console.error('Error checking subscription status:', error);
-    return false;
+    if (error) {
+      console.error("Error checking subscription status:", error);
+      return {
+        success: false,
+        hasActiveSubscription: false,
+        error: error.message,
+      };
+    }
+
+    return {
+      success: true,
+      hasActiveSubscription: !!subscription,
+      subscription: subscription || null,
+    };
+  } catch (error) {
+    console.error("Error in checkUserSubscription:", error);
+    return {
+      success: false,
+      hasActiveSubscription: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
-
-  return !!subscription;
 };
 
 export const manageSubscriptionAction = async (userId: string) => {
-  const supabase = await createClient();
-
-  const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .single();
-
-  if (error) {
-    console.error('Error checking subscription status:', error);
-    return false;
-  }
-
-  const polar = new Polar({
-    server: "sandbox",
-    accessToken: process.env.POLAR_ACCESS_TOKEN,
-  });
-
   try {
+    const supabase = await createClient();
+
+    const { data: subscription, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .single();
+
+    if (error) {
+      console.error("Error checking subscription status:", error);
+      return { success: false, error: "No active subscription found" };
+    }
+
+    if (!subscription?.customer_id) {
+      return { success: false, error: "No customer ID found for subscription" };
+    }
+
+    const polar = new Polar({
+      server: "sandbox",
+      accessToken: process.env.POLAR_ACCESS_TOKEN,
+    });
+
     const result = await polar.customerSessions.create({
       customerId: subscription.customer_id,
     });
 
-    // Only return the URL to avoid Convex type issues
-    return { url: result.customerPortalUrl };
+    return { success: true, url: result.customerPortalUrl };
   } catch (error) {
-    console.error('Error managing subscription:', error);
-    return { error: 'Error managing subscription' };
+    console.error("Error managing subscription:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error managing subscription",
+    };
+  }
+};
+
+export const generateCoverLetterAction = async (formData: FormData) => {
+  try {
+    const resumeText = formData.get("resume_text") as string;
+    const jobDescription = formData.get("job_description") as string;
+    const resumeFile = formData.get("resume_file") as File;
+
+    if (!jobDescription) {
+      return { success: false, error: "Job description is required" };
+    }
+
+    if (!resumeText && !resumeFile) {
+      return { success: false, error: "Resume text or file is required" };
+    }
+
+    // In a real implementation, you would call an AI service here
+    // For this demo, we'll generate a placeholder cover letter
+    const keywords = jobDescription
+      .split(" ")
+      .filter((word) => word.length > 5)
+      .slice(0, 5)
+      .map((word) => word.replace(/[^a-zA-Z]/g, ""));
+
+    const coverLetter = `Dear Hiring Manager,
+
+I am writing to express my interest in the position advertised. With my background and experience, I believe I am a strong candidate for this role.
+
+Based on the job description, I understand you're looking for someone with expertise in ${keywords.join(", ")}. Throughout my career, I have developed strong skills in these areas and have consistently delivered results.
+
+In my previous roles, I have:
+- Successfully led projects requiring ${keywords[0] || "technical expertise"}
+- Developed solutions involving ${keywords[1] || "problem-solving"}
+- Collaborated with teams to implement ${keywords[2] || "innovative approaches"}
+
+I am particularly excited about the opportunity to bring my experience in ${keywords[3] || "this field"} to your organization. Your company's focus on ${keywords[4] || "excellence"} aligns perfectly with my professional values.
+
+Thank you for considering my application. I look forward to the possibility of discussing how my background, skills, and experiences would benefit your organization.
+
+Sincerely,
+Your Name`;
+
+    // Add a delay to simulate processing
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    return { success: true, coverLetter };
+  } catch (error) {
+    console.error("Error generating cover letter:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate cover letter",
+    };
   }
 };

@@ -13,6 +13,7 @@ import { createClient } from "../../supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Toaster } from "@/components/ui/toaster";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -23,7 +24,6 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <Navbar />
-
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-white">
         {/* Background gradient */}
@@ -54,7 +54,7 @@ export default async function Home() {
                       size="lg"
                       className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium"
                     >
-                      Join Waitlist
+                      Try It Now
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
@@ -107,7 +107,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Feature Showcase */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
@@ -190,7 +189,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* How It Works */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -236,7 +234,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Coming Soon */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
@@ -268,7 +265,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Pricing Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -390,7 +386,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Waitlist Form */}
       <section
         id="waitlist"
@@ -423,7 +418,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 text-center">
@@ -443,8 +437,8 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-
       <Footer />
+      <Toaster />
     </div>
   );
 }
