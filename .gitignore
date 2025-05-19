@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+.vscode/
+.vscode/settings.json
 
 # debug
 npm-debug.log*
@@ -41,7 +43,6 @@ yarn-error.log*
 next-env.d.ts
 
 # Tempo
-
 node_modules/
 **/tempobook/dynamic/
 **/tempobook/storyboards/

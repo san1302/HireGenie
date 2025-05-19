@@ -14,6 +14,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/toaster";
+import CoverLetterGenerator from "@/components/CoverLetterGenerator";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -49,7 +50,7 @@ export default async function Home() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                  <Link href="#waitlist">
+                  <Link href="#generator">
                     <Button
                       size="lg"
                       className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium"
@@ -265,6 +266,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      {/* Cover Letter Generator */}
+      <section id="generator" className="bg-white">
+        <CoverLetterGenerator />
+      </section>
       {/* Pricing Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -429,7 +434,7 @@ export default async function Home() {
             interviews with HireGenie.io.
           </p>
           <Link
-            href="#try-it-now"
+            href="#generator"
             className="inline-flex items-center px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Try It Now
