@@ -308,8 +308,8 @@ export default async function Home() {
                 </li>
               </ul>
 
-              <Button className="w-full bg-gray-100 text-gray-800 hover:bg-gray-200">
-                Get Started
+              <Button asChild className="w-full bg-gray-100 text-gray-800 hover:bg-gray-200">
+                <Link href="/pricing">Get Started</Link>
               </Button>
             </div>
 
@@ -348,8 +348,8 @@ export default async function Home() {
                 </li>
               </ul>
 
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-                Subscribe Now
+              <Button asChild className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                <Link href="/pricing">Subscribe Now</Link>
               </Button>
             </div>
 
@@ -384,8 +384,8 @@ export default async function Home() {
                 </li>
               </ul>
 
-              <Button className="w-full bg-gray-800 text-white hover:bg-gray-900">
-                Get Lifetime Access
+              <Button asChild className="w-full bg-gray-800 text-white hover:bg-gray-900">
+                <Link href="/pricing">Get Lifetime Access</Link>
               </Button>
             </div>
           </div>
