@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/toaster";
 import CoverLetterGenerator from "@/components/CoverLetterGenerator";
 import Hero from "@/components/hero";
+import Features from "@/components/features";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -28,88 +29,8 @@ export default async function Home() {
       <Navbar />
       {/* Hero Section */}
       <Hero />
-      {/* Feature Showcase */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              Features That Make a Difference
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Our AI-powered tools help you create the perfect cover letter in
-              minutes, not hours.
-            </p>
-          </div>
-
-          {/* Feature 1 */}
-          <div className="flex flex-col lg:flex-row items-center gap-12 mb-20">
-            <div className="flex-1 order-2 lg:order-1">
-              <h3 className="text-2xl font-bold mb-4">
-                Instant Cover Letter Generator
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Upload your resume, paste the job description, and watch as our
-                AI creates a perfectly tailored cover letter that highlights
-                your relevant skills and experience.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  "Resume-job matching technology",
-                  "Highlights your most relevant experience",
-                  "Customized for each application",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                    <span className="text-gray-600">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex-1 order-1 lg:order-2">
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 shadow-lg">
-                <img
-                  src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80"
-                  alt="Resume matching illustration"
-                  className="rounded-lg w-full"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Feature 2 */}
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            <div className="flex-1">
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 shadow-lg">
-                <img
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80"
-                  alt="Tone tuner illustration"
-                  className="rounded-lg w-full"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold mb-4">Live Tone Tuner</h3>
-              <p className="text-gray-600 mb-6">
-                Adjust the tone of your cover letter to match the company
-                culture. From professional and formal to friendly and
-                conversational, you're in control.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  "Multiple tone options",
-                  "Real-time adjustments",
-                  "Perfect for different industries",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                    <span className="text-gray-600">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Features Section */}
+      <Features />
       {/* How It Works */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
