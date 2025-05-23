@@ -17,6 +17,7 @@ import { Toaster } from "@/components/ui/toaster";
 import CoverLetterGenerator from "@/components/CoverLetterGenerator";
 import Hero from "@/components/hero";
 import Features from "@/components/features";
+import HowItWorks from "@/components/how-it-works";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -32,50 +33,7 @@ export default async function Home() {
       {/* Features Section */}
       <Features />
       {/* How It Works */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Three simple steps to your perfect cover letter
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                icon: <Upload className="w-8 h-8" />,
-                title: "Upload Resume",
-                description:
-                  "Upload your existing resume or CV to our secure platform",
-              },
-              {
-                icon: <FileText className="w-8 h-8" />,
-                title: "Paste Job Description",
-                description:
-                  "Copy and paste the job description you're applying for",
-              },
-              {
-                icon: <Zap className="w-8 h-8" />,
-                title: "Get Tailored Cover Letter",
-                description:
-                  "Receive your personalized cover letter in seconds",
-              },
-            ].map((step, index) => (
-              <div
-                key={index}
-                className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-shadow text-center"
-              >
-                <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                  {step.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
       {/* Coming Soon */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
