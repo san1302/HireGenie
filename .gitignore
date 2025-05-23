@@ -10,6 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
+
 # testing
 /coverage
 
@@ -28,6 +29,9 @@
 
 # Cursor AI configuration
 .cursor/
+*.mdc
+.cursor-rules
+.mdc
 
 # debug
 npm-debug.log*

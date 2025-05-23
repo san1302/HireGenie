@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/toaster";
 import CoverLetterGenerator from "@/components/CoverLetterGenerator";
+import Hero from "@/components/hero";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -26,88 +27,7 @@ export default async function Home() {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <Navbar />
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-70" />
-
-        <div className="relative pt-24 pb-20 sm:pt-32 sm:pb-32">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col lg:flex-row items-center gap-12">
-              <div className="flex-1 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
-                <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-                  Stop writing
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                    {" "}
-                    cover letters{" "}
-                  </span>
-                  by hand
-                </h1>
-
-                <p className="text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  HireGenie.io uses AI to instantly generate personalized,
-                  high-quality cover letters tailored to your resume and job
-                  description.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                  <Link href="#generator">
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium"
-                    >
-                      Try It Now
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <div className="bg-white rounded-xl shadow-xl p-6 max-w-md mx-auto">
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="font-medium">Cover Letter Generator</div>
-                      <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                        AI Powered
-                      </div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-md p-3 mb-3">
-                      <div className="text-sm text-gray-500 mb-1">Resume</div>
-                      <div className="flex items-center text-sm">
-                        <FileText className="w-4 h-4 mr-2 text-blue-500" />
-                        <span>John_Smith_Resume.pdf</span>
-                      </div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-md p-3">
-                      <div className="text-sm text-gray-500 mb-1">
-                        Job Description
-                      </div>
-                      <div className="text-sm line-clamp-2">
-                        Senior Software Engineer with 5+ years experience in
-                        React, Node.js...
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="font-medium mb-2">
-                      Generated Cover Letter
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                      <p className="mb-2">Dear Hiring Manager,</p>
-                      <p className="mb-2">
-                        I am writing to express my interest in the Senior
-                        Software Engineer position at Acme Inc. With over 5
-                        years of experience in React and Node.js development...
-                      </p>
-                      <p className="text-gray-400">[ Preview truncated ]</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Hero />
       {/* Feature Showcase */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 
 export default function Hero() {
   return (
-    <div className="relative overflow-hidden bg-white">
+    <section className="relative overflow-hidden bg-white">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-70" />
 
@@ -28,7 +28,7 @@ export default function Hero() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                <Link href="#try-it-now">
+                <Link href="#generator">
                   <Button
                     size="lg"
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium"
@@ -56,21 +56,52 @@ export default function Hero() {
             </div>
 
             <div className="flex-1">
-              <div className="bg-white rounded-xl shadow-xl p-6 max-w-md mx-auto">
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="font-medium">Cover Letter Generator</div>
-                    <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                      AI Powered
-                    </div>
+              <div className="bg-white rounded-xl shadow-xl p-6 md:p-8 border border-gray-100 transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                <div className="flex items-center mb-4">
+                  <div className="bg-indigo-100 text-indigo-600 rounded-lg px-3 py-1 text-sm font-medium">
+                    AI Powered
                   </div>
-                  {/* Mock UI content */}
+                </div>
+                
+                <div className="mb-4">
+                  <div className="text-sm text-gray-500 mb-1">Resume</div>
+                  <div className="flex items-center p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <FileText className="h-5 w-5 text-gray-400 mr-2" />
+                    <span className="text-gray-700">John_Smith_Resume.pdf</span>
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <div className="text-sm text-gray-500 mb-1">
+                    Job Description
+                  </div>
+                  <div className="p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm">
+                    Senior Software Engineer with 5+ years experience in React,
+                    Node.js...
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100">
+                  <div className="text-sm text-gray-500 mb-2">
+                    Generated Cover Letter
+                  </div>
+                  <div className="text-gray-800">
+                    <p className="font-medium mb-2">Dear Hiring Manager,</p>
+                    <p className="text-sm">
+                      I am writing to express my interest in the Senior Software
+                      Engineer position at Acme Inc. With over 5 years of
+                      experience in React and Node.js development...
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2 italic">
+                      [ Preview truncated ]
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
