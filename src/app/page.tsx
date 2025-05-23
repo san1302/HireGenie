@@ -19,6 +19,7 @@ import Hero from "@/components/hero";
 import Features from "@/components/features";
 import HowItWorks from "@/components/how-it-works";
 import ComingSoon from "@/components/coming-soon";
+import WaitlistForm from "@/components/waitlist-form";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -163,56 +164,7 @@ export default async function Home() {
         </div>
       </section>
       {/* Waitlist Form */}
-      <section
-        id="waitlist"
-        className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-      >
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Join the Waitlist</h2>
-            <p className="max-w-2xl mx-auto opacity-90">
-              Be the first to know when HireGenie.io launches. Early access
-              members will receive special benefits.
-            </p>
-          </div>
-
-          <div className="max-w-md mx-auto">
-            <form className="flex flex-col sm:flex-row gap-3">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:border-white"
-                required
-              />
-              <Button className="bg-white text-blue-600 hover:bg-blue-50">
-                Join Now
-              </Button>
-            </form>
-            <div className="mt-6 text-center text-sm opacity-80">
-              <p>Join 1,240+ others waiting for access</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* CTA Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Transform Your Job Search?
-          </h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of job seekers who are saving time and getting more
-            interviews with HireGenie.io.
-          </p>
-          <Link
-            href="#generator"
-            className="inline-flex items-center px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try It Now
-            <ArrowUpRight className="ml-2 w-4 h-4" />
-          </Link>
-        </div>
-      </section>
+      <WaitlistForm />
       <Footer />
       <Toaster />
     </div>

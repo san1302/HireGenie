@@ -1,71 +1,104 @@
+"use client";
+
 import Link from "next/link";
-import { Twitter, Linkedin, Github } from "lucide-react";
+import { Twitter, Linkedin, Github, Mail, Send, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { useToast } from "./ui/use-toast";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setEmail("");
+      toast({
+        title: "Thank you for subscribing!",
+        description: "You'll now receive our newsletter with the latest updates.",
+      });
+    }, 1000);
+  };
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-100">
+    <footer className="bg-gray-900 text-gray-300">
+      
+      {/* Main footer content */}
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-12">
+          {/* Logo and about */}
+          <div className="md:col-span-2">
+            <div className="flex items-center mb-4">
+              <div className="font-bold text-2xl text-white">HireGenie.io</div>
+            </div>
+            <p className="text-gray-400 mb-6 max-w-md">
+              AI-powered cover letter generator that helps job seekers create personalized, 
+              professional cover letters in seconds. Get more interviews and land your dream job.
+            </p>
+            <div className="flex space-x-5">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <span className="sr-only">Twitter</span>
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <span className="sr-only">LinkedIn</span>
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <span className="sr-only">GitHub</span>
+                <Github className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+
           {/* Product Column */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Product</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold text-white text-lg mb-4">Product</h3>
+            <ul className="space-y-3">
               <li>
                 <Link
                   href="#features"
-                  className="text-gray-600 hover:text-blue-600"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
-                  Features
+                  <span>Features</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
                 <Link
                   href="#waitlist"
-                  className="text-gray-600 hover:text-blue-600"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
-                  Join Waitlist
+                  <span>Join Waitlist</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
                 <Link
                   href="/dashboard"
-                  className="text-gray-600 hover:text-blue-600"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
-                  Dashboard
+                  <span>Dashboard</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  API
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Company Column */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Press
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Pricing</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
             </ul>
@@ -73,26 +106,42 @@ export default function Footer() {
 
           {/* Resources Column */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Resources</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold text-white text-lg mb-4">Resources</h3>
+            <ul className="space-y-3">
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Documentation
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Blog</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Help Center
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Help Center</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Community
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Guides</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Status
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Documentation</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
             </ul>
@@ -100,50 +149,54 @@ export default function Footer() {
 
           {/* Legal Column */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
-            <ul className="space-y-2">
+            <h3 className="font-semibold text-white text-lg mb-4">Legal</h3>
+            <ul className="space-y-3">
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Privacy
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Privacy Policy</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Terms
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Terms of Service</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Security
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-600 hover:text-blue-600">
-                  Cookies
+                <Link
+                  href="#"
+                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
+                >
+                  <span>Cookie Policy</span>
+                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-200">
-          <div className="text-gray-600 mb-4 md:mb-0">
+        <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
+          <div className="text-gray-500 mb-4 md:mb-0 text-sm">
             © {currentYear} HireGenie.io. All rights reserved.
           </div>
-
-          <div className="flex space-x-6">
-            <a href="#" className="text-gray-400 hover:text-gray-500">
-              <span className="sr-only">Twitter</span>
-              <Twitter className="h-6 w-6" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-gray-500">
-              <span className="sr-only">LinkedIn</span>
-              <Linkedin className="h-6 w-6" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-gray-500">
-              <span className="sr-only">GitHub</span>
-              <Github className="h-6 w-6" />
-            </a>
+          
+          <div className="flex space-x-6 text-sm text-gray-500">
+            <Link href="#" className="hover:text-gray-300 transition-colors">
+              Privacy
+            </Link>
+            <Link href="#" className="hover:text-gray-300 transition-colors">
+              Terms
+            </Link>
+            <Link href="#" className="hover:text-gray-300 transition-colors">
+              Cookies
+            </Link>
           </div>
         </div>
       </div>
