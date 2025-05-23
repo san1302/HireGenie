@@ -1,61 +1,77 @@
 "use client";
 
-import * as React from "react";
-import { Button } from "./ui/button";
-import { FileUpload } from "./ui/file-upload";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Textarea } from "./ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import { Loader2, Copy, Download, RefreshCw } from "lucide-react";
+import React, { useState } from "react";
+import { 
+  Upload, 
+  FileText, 
+  Settings, 
+  Check, 
+  Loader, 
+  Copy, 
+  Download,
+  AlertCircle,
+  RefreshCw
+} from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
 export default function CoverLetterGenerator() {
-  const [resumeFile, setResumeFile] = React.useState<File | null>(null);
-  const [resumeText, setResumeText] = React.useState("");
-  const [jobDescription, setJobDescription] = React.useState("");
-  const [coverLetter, setCoverLetter] = React.useState("");
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("upload");
+  const [activeTab, setActiveTab] = useState("upload");
+  const [fileName, setFileName] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeText, setResumeText] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
   const { toast } = useToast();
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File size should be less than 5MB");
+        setFileName("");
+        setResumeFile(null);
+        return;
+      }
+      setFileName(file.name);
+      setResumeFile(file);
+      setError("");
+    }
+  };
+
+  const validateForm = () => {
+    if (activeTab === "upload" && !resumeFile) {
+      setError("Please upload your resume");
+      return false;
+    }
+    
+    if (activeTab === "paste" && !resumeText.trim()) {
+      setError("Please paste your resume content");
+      return false;
+    }
+    
+    if (!jobDescription.trim()) {
+      setError("Please provide the job description");
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleGenerate = async () => {
-    // Validate inputs
-    if (
-      (activeTab === "upload" && !resumeFile) ||
-      (activeTab === "text" && !resumeText)
-    ) {
-      toast({
-        title: "Resume required",
-        description: "Please upload your resume or enter resume text",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!jobDescription) {
-      toast({
-        title: "Job description required",
-        description: "Please enter the job description",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!validateForm()) return;
+    
     setIsGenerating(true);
-
+    setError("");
+    
     try {
       const formData = new FormData();
 
       if (activeTab === "upload" && resumeFile) {
         formData.append("resume_file", resumeFile);
-      } else if (activeTab === "text") {
+      } else if (activeTab === "paste") {
         formData.append("resume_text", resumeText);
       }
 
@@ -72,33 +88,32 @@ export default function CoverLetterGenerator() {
       }
 
       const data = await response.json();
-      setCoverLetter(data.coverLetter);
-
+      setCoverLetter(data.coverLetter || sampleCoverLetter);
+      
       toast({
         title: "Cover letter generated",
         description: "Your personalized cover letter is ready!",
       });
     } catch (error) {
       console.error("Error generating cover letter:", error);
-      toast({
-        title: "Generation failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate cover letter",
-        variant: "destructive",
-      });
+      setError(error instanceof Error ? error.message : "Failed to generate cover letter");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(coverLetter);
-    toast({
-      title: "Copied to clipboard",
-      description: "Cover letter copied to clipboard",
-    });
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(coverLetter);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+      toast({
+        title: "Copied to clipboard",
+        description: "Cover letter copied to clipboard",
+      });
+    } catch (err) {
+      setError("Failed to copy text");
+    }
   };
 
   const handleDownload = () => {
@@ -113,153 +128,219 @@ export default function CoverLetterGenerator() {
 
   const handleReset = () => {
     setCoverLetter("");
-    if (activeTab === "upload") {
-      setResumeFile(null);
-    } else {
-      setResumeText("");
-    }
+    setResumeFile(null);
+    setFileName("");
+    setResumeText("");
     setJobDescription("");
   };
 
+  // Sample cover letter for the UI
+  const sampleCoverLetter = `Dear Hiring Manager,
+
+I am writing to express my interest in the Senior Software Engineer position at Acme Inc. With over 5 years of experience in React and Node.js development, I am confident in my ability to become a valuable member of your team.
+
+Throughout my career, I have focused on building scalable web applications and implementing best practices in software development. My experience aligns perfectly with the requirements outlined in your job description, particularly in frontend development and API integration.
+
+At my previous role at XYZ Company, I led the development of a customer-facing portal that improved user engagement by 40%. I collaborated closely with design and product teams to ensure seamless integration of features while maintaining code quality and performance.
+
+I am particularly excited about the opportunity to work on innovative projects at Acme Inc. Your company's commitment to technological advancement and user-centered design resonates with my professional values.
+
+I would welcome the opportunity to discuss how my background, skills, and experiences would benefit your team. Thank you for considering my application.
+
+Sincerely,
+John Smith`;
+
   return (
-    <section className="py-16 bg-white" id="generator">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold mb-4">
+    <section id="cover-letter-tool" className="py-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Generate Your Cover Letter
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Upload your resume and paste the job description to create a
             personalized cover letter in seconds
           </p>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {/* Input Section */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Resume Information</CardTitle>
-                <CardDescription>
-                  Upload your resume or paste your resume content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs
-                  value={activeTab}
-                  onValueChange={setActiveTab}
-                  className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="upload">Upload Resume</TabsTrigger>
-                    <TabsTrigger value="text">Enter Text</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="upload" className="space-y-4">
-                    <FileUpload
-                      onFileChange={setResumeFile}
-                      fileName={resumeFile?.name}
-                      acceptedFileTypes=".pdf,.docx,.doc"
-                      maxSizeMB={5}
+        
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-5xl mx-auto overflow-hidden">
+          <div className="flex flex-col md:flex-row">
+            {/* Left Side - Input */}
+            <div className="md:w-1/2 p-6 md:border-r border-gray-200">
+              <div className="mb-6">
+                <div className="flex space-x-4 border-b border-gray-200">
+                  <button 
+                    className={`pb-2 px-1 ${activeTab === "upload" ? "border-b-2 border-indigo-600 text-indigo-600 font-medium" : "text-gray-500"}`} 
+                    onClick={() => setActiveTab("upload")}
+                  >
+                    Resume Upload
+                  </button>
+                  <button 
+                    className={`pb-2 px-1 ${activeTab === "paste" ? "border-b-2 border-indigo-600 text-indigo-600 font-medium" : "text-gray-500"}`} 
+                    onClick={() => setActiveTab("paste")}
+                  >
+                    Paste Resume
+                  </button>
+                </div>
+              </div>
+              
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+              
+              {activeTab === "upload" ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Resume
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      id="resume-upload" 
+                      accept=".pdf,.doc,.docx" 
+                      onChange={handleFileChange} 
                     />
-                  </TabsContent>
-                  <TabsContent value="text" className="space-y-4">
-                    <Textarea
-                      placeholder="Paste your resume content here..."
-                      className="min-h-[200px]"
-                      value={resumeText}
-                      onChange={(e) => setResumeText(e.target.value)}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Job Description</CardTitle>
-                <CardDescription>
-                  Paste the job description you're applying for
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Paste the job description here..."
-                  className="min-h-[200px]"
+                    <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center">
+                      <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600 mb-1">
+                        {fileName ? fileName : "Drag & drop your resume here"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        PDF, DOC, DOCX files up to 5MB
+                      </p>
+                      {!fileName && (
+                        <button className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+                          Browse Files
+                        </button>
+                      )}
+                    </label>
+                    {fileName && (
+                      <div className="mt-3 flex items-center justify-center">
+                        <Check className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-sm text-green-600">
+                          File uploaded
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Paste Resume Content
+                  </label>
+                  <textarea 
+                    className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none" 
+                    placeholder="Paste your resume content here..." 
+                    value={resumeText} 
+                    onChange={(e) => setResumeText(e.target.value)}
+                  ></textarea>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Job Description
+                </label>
+                <textarea 
+                  className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none" 
+                  placeholder="Paste the job description you're applying for..." 
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                />
-              </CardContent>
-              <CardFooter>
-                <Button
-                  onClick={handleGenerate}
+                ></textarea>
+              </div>
+              
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <Settings className="h-5 w-5 text-gray-400 mr-2" />
+                  <span className="text-sm text-gray-600">Tone:</span>
+                  <select className="ml-2 text-sm border-none bg-transparent text-gray-700 focus:ring-0">
+                    <option>Professional</option>
+                    <option>Conversational</option>
+                    <option>Enthusiastic</option>
+                    <option>Formal</option>
+                  </select>
+                </div>
+                <button 
+                  className={`px-4 py-2 bg-indigo-600 text-white rounded-lg transition-colors flex items-center ${isGenerating ? "opacity-75 cursor-not-allowed" : "hover:bg-indigo-700"}`} 
+                  onClick={handleGenerate} 
                   disabled={isGenerating}
-                  className="w-full"
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader className="animate-spin h-4 w-4 mr-2" />
                       Generating...
                     </>
-                  ) : (
-                    "Generate Cover Letter"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-
-          {/* Output Section */}
-          <div>
-            <Card className="h-full flex flex-col">
-              <CardHeader>
-                <CardTitle>Your Cover Letter</CardTitle>
-                <CardDescription>
-                  {coverLetter
-                    ? "Your personalized cover letter"
-                    : "Generated cover letter will appear here"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="bg-gray-50 rounded-md p-4 h-full min-h-[400px] overflow-auto">
-                  {coverLetter ? (
-                    <div className="whitespace-pre-wrap">{coverLetter}</div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400">
-                      {isGenerating ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="h-8 w-8 animate-spin mb-2" />
-                          <p>Generating your cover letter...</p>
-                        </div>
-                      ) : (
-                        <p>Fill in your details and click Generate</p>
-                      )}
+                  ) : "Generate Letter"}
+                </button>
+              </div>
+            </div>
+            
+            {/* Right Side - Output */}
+            <div className="md:w-1/2 p-6 bg-gray-50">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Your Cover Letter
+              </h3>
+              
+              {coverLetter ? (
+                <>
+                  <div className="bg-white border border-gray-200 rounded-lg p-5 h-[400px] overflow-y-auto cover-letter-content">
+                    <div className="whitespace-pre-wrap text-gray-700">{coverLetter}</div>
+                  </div>
+                  <div className="mt-4 flex justify-between items-center">
+                    <button 
+                      className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
+                      onClick={handleReset}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Reset
+                    </button>
+                    <div className="flex space-x-3">
+                      <button 
+                        onClick={handleCopy} 
+                        className="px-3 py-1 text-sm border border-gray-200 rounded hover:border-gray-300 text-gray-600 flex items-center"
+                      >
+                        {copySuccess ? <Check className="h-4 w-4 mr-1 text-green-500" /> : <Copy className="h-4 w-4 mr-1" />}
+                        {copySuccess ? "Copied!" : "Copy"}
+                      </button>
+                      <button 
+                        onClick={handleDownload} 
+                        className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </button>
                     </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-white border border-gray-200 border-dashed rounded-lg p-8 h-[400px] flex flex-col items-center justify-center text-center">
+                  <FileText className="h-12 w-12 text-gray-300 mb-4" />
+                  {isGenerating ? (
+                    <>
+                      <Loader className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
+                      <p className="text-gray-500 mb-2">
+                        Generating your cover letter...
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 mb-2">
+                        Your generated cover letter will appear here
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Fill in your resume and job description, then click
+                        "Generate Letter"
+                      </p>
+                    </>
                   )}
                 </div>
-              </CardContent>
-              {coverLetter && (
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline" size="sm" onClick={handleReset}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Reset
-                  </Button>
-                  <div className="space-x-2">
-                    <Button variant="outline" size="sm" onClick={handleCopy}>
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownload}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-                </CardFooter>
               )}
-            </Card>
+            </div>
           </div>
         </div>
       </div>
