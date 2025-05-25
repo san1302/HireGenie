@@ -10,7 +10,8 @@ import {
   Copy, 
   Download,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  X
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
@@ -24,21 +25,93 @@ export default function CoverLetterGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [fileProcessing, setFileProcessing] = useState(false);
   const { toast } = useToast();
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      handleFileSelection(file);
+    }
+  };
+
+  const handleFileSelection = (file: File) => {
+    setFileProcessing(true);
+    setError("");
+    
+    // Check file size
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File size should be less than 5MB");
+      setFileName("");
+      setResumeFile(null);
+      setFileProcessing(false);
+      return;
+    }
+    
+    // Check file type
+    const validTypes = [
+      'application/pdf', 
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    const validExtensions = ['.pdf', '.doc', '.docx'];
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+      setError("Please upload a PDF or Word document");
+      setFileName("");
+      setResumeFile(null);
+      setFileProcessing(false);
+      return;
+    }
+    
+    setFileName(file.name);
+    setResumeFile(file);
+    
+    // Simulate brief processing time for better UX
+    setTimeout(() => {
+      setFileProcessing(false);
+    }, 600);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError("File size should be less than 5MB");
-        setFileName("");
-        setResumeFile(null);
-        return;
-      }
-      setFileName(file.name);
-      setResumeFile(file);
-      setError("");
+      handleFileSelection(file);
     }
+  };
+
+  const clearSelectedFile = () => {
+    setFileName("");
+    setResumeFile(null);
+    setError("");
+    
+    // Reset the file input value
+    const fileInput = document.getElementById("resume-upload") as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
   };
 
   const validateForm = () => {
@@ -196,7 +269,19 @@ John Smith`;
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Upload Resume
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragging 
+                        ? "border-blue-500 bg-blue-50" 
+                        : fileName 
+                          ? "border-green-300 hover:border-green-400" 
+                          : "border-gray-300 hover:border-indigo-500"
+                    }`}
+                    onDragEnter={handleDragEnter}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <input 
                       type="file" 
                       className="hidden" 
@@ -205,24 +290,56 @@ John Smith`;
                       onChange={handleFileChange} 
                     />
                     <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center">
-                      <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                      <Upload className={`h-10 w-10 mb-2 ${
+                        isDragging ? "text-blue-500" : fileName ? "text-green-500" : "text-gray-400"
+                      }`} />
                       <p className="text-sm text-gray-600 mb-1">
-                        {fileName ? fileName : "Drag & drop your resume here"}
+                        {isDragging 
+                          ? "Drop your file here" 
+                          : fileName 
+                            ? fileName 
+                            : "Upload your resume"}
                       </p>
                       <p className="text-xs text-gray-500">
-                        PDF, DOC, DOCX files up to 5MB
+                        Drag & drop or click to browse • PDF, DOC, DOCX files up to 5MB
                       </p>
-                      {!fileName && (
-                        <button className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+                      {!fileName && !isDragging && (
+                        <button 
+                          className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            document.getElementById("resume-upload")?.click();
+                          }}
+                          type="button"
+                        >
                           Browse Files
                         </button>
                       )}
                     </label>
-                    {fileName && (
+                    {fileName && !fileProcessing && (
                       <div className="mt-3 flex items-center justify-center">
-                        <Check className="h-4 w-4 text-green-500 mr-1" />
-                        <span className="text-sm text-green-600">
-                          File uploaded
+                        <div className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-1" />
+                          <span className="text-sm text-green-600 mr-2">
+                            File selected
+                          </span>
+                        </div>
+                        <button 
+                          onClick={clearSelectedFile}
+                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                          type="button"
+                          aria-label="Remove file"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                    {fileProcessing && (
+                      <div className="mt-3 flex items-center justify-center">
+                        <Loader className="h-4 w-4 text-blue-500 mr-1 animate-spin" />
+                        <span className="text-sm text-blue-600">
+                          Processing file...
                         </span>
                       </div>
                     )}
