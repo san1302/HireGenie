@@ -27,6 +27,7 @@ export default function PricingCard({
 
   // Handle checkout process
   const handleCheckout = async (priceId: string) => {
+    console.log("priceId", priceId);
     if (!priceId) {
       toast({
         title: "Error",
@@ -94,7 +95,7 @@ export default function PricingCard({
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-30" />
       )}
       <CardHeader className="relative">
-        {item.popular && (
+        {item.name === "Pro" && (
           <div className="px-4 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-full w-fit mb-4">
             Most Popular
           </div>
@@ -124,7 +125,7 @@ export default function PricingCard({
       <CardFooter className="relative">
         <Button
           onClick={async () => {
-            await handleCheckout(item?.prices?.[0]?.id);
+            await handleCheckout(item?.prices?.[0]?.productId);
           }}
           disabled={isLoading}
           className={`w-full py-6 text-lg font-medium ${

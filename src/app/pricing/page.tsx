@@ -6,10 +6,10 @@ import { createClient } from "../../../supabase/server";
 export default async function Pricing() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
+    console.log(user);
     const { data: plans, error } = await supabase.functions.invoke('supabase-functions-get-plans');
-
     const result = plans?.items;
+    console.log("prices", result[0].prices);
 
     return (
         <>

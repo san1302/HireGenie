@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
   try {
     // Get user IP for rate limiting
     const ip = request.headers.get("x-forwarded-for") || "unknown";
-
     // Check rate limit
     const now = Date.now();
     const rateLimitEntry = rateLimitMap.get(ip) || { count: 0, timestamp: now };
@@ -29,7 +28,6 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     // Apply rate limiting for unauthenticated users
     if (!user && rateLimitEntry.count >= RATE_LIMIT) {
       return NextResponse.json(
@@ -53,7 +51,6 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id)
         .eq("status", "active")
         .single();
-
       hasActiveSubscription = !!subscription;
     }
 

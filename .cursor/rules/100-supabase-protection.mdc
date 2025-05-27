@@ -1,0 +1,33 @@
+---
+description: 
+globs: supabase/**/*
+alwaysApply: false
+---
+
+# Supabase Protection Rule
+
+## Protected Files
+- All Supabase configuration files are considered critical infrastructure
+- This includes all files in the supabase directory:
+  - `supabase/*.ts` - Core configuration files
+  - `supabase/functions/**/*.*` - Edge functions implementation
+  - `supabase/migrations/**/*.*` - Database migrations
+
+## Modification Guidelines
+- NEVER modify these files without explicit user confirmation
+- When changes are requested:
+  1. Provide detailed explanation of what will be changed
+  2. Explain potential impacts on the application
+  3. Ask for explicit confirmation before proceeding
+  4. Make minimal, targeted changes only
+
+## Special Considerations
+- Database schema changes require careful migration planning
+- Edge function modifications may affect production deployment
+- Authentication flow changes can impact user access
+- Middleware changes can affect all application routes
+
+## When Changes Are Necessary
+- Prefer additions over modifications to existing code
+- Document all changes thoroughly
+- Suggest testing steps after implementation

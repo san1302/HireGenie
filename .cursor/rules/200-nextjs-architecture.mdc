@@ -1,0 +1,40 @@
+---
+description: This rule is helpful for next js projects.
+globs: 
+alwaysApply: false
+---
+# Next.js Architecture Guidelines
+
+## App Router Structure
+- Follow the App Router conventions for routing and layouts
+- Place shared layouts in appropriate layout.tsx files
+- Use loading.tsx for loading states
+- Implement error.tsx for error boundaries
+- Handle not-found.tsx for 404 pages
+
+## Component Organization
+- Use "use client" only when necessary
+- Prefer Server Components by default
+- Keep client components small and focused
+- Follow shadcn/ui component patterns
+- Place reusable components in src/components
+
+## Data Fetching
+- Use React Server Components for data fetching when possible
+- Implement proper caching strategies
+- Consider Suspense boundaries for loading states
+- Handle errors gracefully
+- Use Supabase client appropriately based on context
+
+## Authentication Flow
+- Follow Supabase Auth patterns
+- Protect routes appropriately with middleware
+- Handle authentication state consistently
+- Implement proper redirect patterns
+- Consider user experience for auth flows
+
+## CSS and Styling
+- Use Tailwind CSS for styling
+- Follow the project's existing style patterns
+- Ensure responsive design on all components
+- Use design system variables for consistency
