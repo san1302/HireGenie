@@ -28,10 +28,10 @@
 .vscode/settings.json
 
 # Cursor AI configuration
-# .cursor/
-# *.mdc
-# .cursor-rules
-# .mdc
+.cursor/
+*.mdc
+.cursor-rules
+.mdc
 
 # debug
 npm-debug.log*
@@ -39,8 +39,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-# .env*.local
-# .env
+.env*.local
+.env
 
 # vercel
 .vercel
