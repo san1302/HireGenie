@@ -1,12 +1,12 @@
 // ATS (Applicant Tracking System) Analyzer Service
-// Analyzes resume compatibility with ATS systems and provides scoring
+// AI-powered analysis for realistic ATS compatibility scoring
 
-import { generateCoverLetter } from './openai';
+import OpenAI from 'openai';
 
 // TypeScript interfaces for ATS analysis
 export interface ATSScoreBreakdown {
-  keywordMatch: number;        // 0-100: Percentage of job keywords found in resume
-  skillsAlignment: number;     // 0-100: Skills matching score
+  keywordMatch: number;        // 0-100: Percentage of relevant keywords found
+  skillsAlignment: number;     // 0-100: Technical skills matching score
   formatCompatibility: number; // 0-100: Format and structure score
   contactInfo: number;        // 0-100: Contact information completeness
   bonusFeatures: number;      // 0-100: Job titles, certifications, etc.
@@ -32,27 +32,305 @@ export interface ATSAnalysisError {
 
 export type ATSResult = ATSAnalysisResult | ATSAnalysisError;
 
+// AI-powered keyword extraction interfaces
+interface KeywordExtractionResult {
+  technicalSkills: string[];
+  qualifications: string[];
+  experienceTerms: string[];
+  industryTerms: string[];
+  jobTitles: string[];
+}
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 // Configuration for ATS analysis
 const ATS_CONFIG = {
   weights: {
-    keywordMatch: 0.40,        // 40% weight - Job Description terms
-    skillsAlignment: 0.30,     // 30% weight - Skills matching
+    keywordMatch: 0.40,        // 40% weight - Relevant keywords
+    skillsAlignment: 0.30,     // 30% weight - Technical skills matching
     formatCompatibility: 0.20, // 20% weight - Format and structure
     contactInfo: 0.05,         // 5% weight - Contact information
     bonusFeatures: 0.05        // 5% weight - Job titles, certifications, etc.
-  },
-  minKeywordLength: 3,
-  commonWords: new Set([
-    'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
-    'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above',
-    'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
-    'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'a', 'an'
-  ])
+  }
 };
 
 /**
- * Analyze ATS compatibility of resume against job description
+ * Extract relevant keywords from job description using AI
+ */
+async function extractJobKeywordsWithAI(jobDescription: string): Promise<KeywordExtractionResult> {
+  const systemPrompt = `You are an expert ATS (Applicant Tracking System) analyzer. Extract the most important keywords that an ATS would look for in a resume for this job.
+
+Focus on:
+1. Technical skills and technologies (programming languages, frameworks, tools)
+2. Required qualifications and experience levels
+3. Industry-specific terms and methodologies
+4. Job titles and role-related terms
+
+Return ONLY a JSON object with these exact keys:
+{
+  "technicalSkills": ["react", "javascript", "html", "css"],
+  "qualifications": ["5+ years experience", "bachelor's degree"],
+  "experienceTerms": ["frontend development", "team leadership"],
+  "industryTerms": ["agile", "scrum", "ci/cd"],
+  "jobTitles": ["tech lead", "frontend developer"]
+}
+
+Do not include common words like "job", "title", "company", "location", "responsibilities".`;
+
+  const userPrompt = `Extract ATS-relevant keywords from this job description:
+
+${jobDescription}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: 1000,
+      temperature: 0.1, // Low temperature for consistent extraction
+    });
+
+    const response = completion.choices[0]?.message?.content;
+    if (!response) {
+      throw new Error('No response from OpenAI');
+    }
+
+    // Parse JSON response
+    const keywords = JSON.parse(response) as KeywordExtractionResult;
+    
+    // Normalize keywords to lowercase
+    return {
+      technicalSkills: keywords.technicalSkills.map(k => k.toLowerCase()),
+      qualifications: keywords.qualifications.map(k => k.toLowerCase()),
+      experienceTerms: keywords.experienceTerms.map(k => k.toLowerCase()),
+      industryTerms: keywords.industryTerms.map(k => k.toLowerCase()),
+      jobTitles: keywords.jobTitles.map(k => k.toLowerCase())
+    };
+
+  } catch (error) {
+    console.error('AI keyword extraction failed:', error);
+    
+    // Fallback to basic extraction
+    return extractKeywordsFallback(jobDescription);
+  }
+}
+
+/**
+ * Fallback keyword extraction if AI fails
+ */
+function extractKeywordsFallback(jobDescription: string): KeywordExtractionResult {
+  const text = jobDescription.toLowerCase();
+  
+  // Common technical skills
+  const technicalSkills = [
+    'javascript', 'react', 'angular', 'vue', 'html', 'css', 'typescript',
+    'node.js', 'python', 'java', 'redux', 'mobx', 'api', 'rest', 'graphql'
+  ].filter(skill => text.includes(skill));
+
+  // Common qualifications
+  const qualifications = [
+    'bachelor', 'master', 'degree', 'years experience', 'senior', 'lead'
+  ].filter(qual => text.includes(qual));
+
+  // Experience terms
+  const experienceTerms = [
+    'frontend', 'backend', 'full stack', 'development', 'engineering'
+  ].filter(term => text.includes(term));
+
+  // Industry terms
+  const industryTerms = [
+    'agile', 'scrum', 'ci/cd', 'testing', 'code review'
+  ].filter(term => text.includes(term));
+
+  // Job titles
+  const jobTitles = [
+    'developer', 'engineer', 'tech lead', 'frontend developer'
+  ].filter(title => text.includes(title));
+
+  return {
+    technicalSkills,
+    qualifications,
+    experienceTerms,
+    industryTerms,
+    jobTitles
+  };
+}
+
+/**
+ * Analyze keyword matching between resume and job requirements
+ */
+function analyzeKeywordMatch(resumeText: string, jobKeywords: KeywordExtractionResult) {
+  const resumeLower = resumeText.toLowerCase();
+  
+  // Combine all relevant keywords
+  const allKeywords = [
+    ...jobKeywords.technicalSkills,
+    ...jobKeywords.qualifications,
+    ...jobKeywords.experienceTerms,
+    ...jobKeywords.industryTerms,
+    ...jobKeywords.jobTitles
+  ];
+
+  const matched: string[] = [];
+  const missing: string[] = [];
+
+  allKeywords.forEach(keyword => {
+    if (resumeLower.includes(keyword)) {
+      matched.push(keyword);
+    } else {
+      missing.push(keyword);
+    }
+  });
+
+  // Calculate score - more realistic thresholds
+  const matchPercentage = allKeywords.length > 0 ? (matched.length / allKeywords.length) * 100 : 0;
+  
+  // Realistic scoring: 60%+ match is good, 80%+ is excellent
+  let score = Math.round(matchPercentage);
+  
+  const recommendations: string[] = [];
+  if (score < 60) {
+    const topMissing = missing.slice(0, 3);
+    recommendations.push(`Include key skills: ${topMissing.join(', ')}`);
+  }
+  if (score < 40) {
+    recommendations.push('Consider adding more relevant technical skills from the job description');
+  }
+  if (score < 20) {
+    recommendations.push('Your resume may not be a good match for this role - consider highlighting relevant experience');
+  }
+
+  return { score, matched, missing, recommendations };
+}
+
+/**
+ * Analyze technical skills alignment
+ */
+function analyzeSkillsAlignment(resumeText: string, jobKeywords: KeywordExtractionResult) {
+  const resumeLower = resumeText.toLowerCase();
+  
+  const found = jobKeywords.technicalSkills.filter(skill => 
+    resumeLower.includes(skill)
+  );
+  
+  const missing = jobKeywords.technicalSkills.filter(skill => 
+    !resumeLower.includes(skill)
+  );
+
+  // Skills are critical - stricter scoring
+  const score = jobKeywords.technicalSkills.length > 0 ? 
+    Math.round((found.length / jobKeywords.technicalSkills.length) * 100) : 100;
+
+  const recommendations: string[] = [];
+  if (score < 70) {
+    const topMissing = missing.slice(0, 2);
+    recommendations.push(`Add missing technical skills: ${topMissing.join(', ')}`);
+  }
+  if (score < 50) {
+    recommendations.push('Significant skills gap - consider gaining experience in required technologies');
+  }
+
+  return { score, found, missing, recommendations };
+}
+
+/**
+ * Analyze format compatibility (simplified but realistic)
+ */
+function analyzeFormatCompatibility(resumeText: string) {
+  let score = 100;
+  const recommendations: string[] = [];
+
+  // Check for basic sections (more lenient)
+  const hasContact = /email|phone|@/.test(resumeText);
+  const hasExperience = /experience|work|employment|position|role/i.test(resumeText);
+  const hasSkills = /skills|technical|technologies|programming/i.test(resumeText);
+
+  if (!hasContact) {
+    score -= 30;
+    recommendations.push('Include clear contact information');
+  }
+  if (!hasExperience) {
+    score -= 40;
+    recommendations.push('Add work experience section');
+  }
+  if (!hasSkills) {
+    score -= 30;
+    recommendations.push('Include a technical skills section');
+  }
+
+  return { score: Math.max(0, score), recommendations };
+}
+
+/**
+ * Analyze contact information completeness
+ */
+function analyzeContactInfo(resumeText: string) {
+  let score = 0;
+  const recommendations: string[] = [];
+
+  // Check for email
+  const hasEmail = /@[\w.-]+\.\w+/.test(resumeText);
+  if (hasEmail) score += 60;
+  else recommendations.push('Include a professional email address');
+
+  // Check for phone
+  const hasPhone = /(\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/.test(resumeText);
+  if (hasPhone) score += 40;
+  else recommendations.push('Include a phone number');
+
+  return { score: Math.min(100, score), recommendations };
+}
+
+/**
+ * Analyze bonus features
+ */
+function analyzeBonusFeatures(resumeText: string, jobKeywords: KeywordExtractionResult) {
+  let score = 0;
+  const found: string[] = [];
+  const recommendations: string[] = [];
+
+  // Check for matching job titles
+  const matchingTitles = jobKeywords.jobTitles.filter(title => 
+    resumeText.toLowerCase().includes(title)
+  );
+  
+  if (matchingTitles.length > 0) {
+    score += 40;
+    found.push(...matchingTitles.map(title => `Job Title: ${title}`));
+  }
+
+  // Check for certifications
+  const certifications = extractCertifications(resumeText);
+  if (certifications.length > 0) {
+    score += 30;
+    found.push(...certifications.map(cert => `Certification: ${cert}`));
+  }
+
+  // Check for years of experience
+  const experienceYears = extractExperienceYears(resumeText);
+  if (experienceYears > 0) {
+    score += 30;
+    found.push(`Experience: ${experienceYears} years`);
+  }
+
+  // Recommendations
+  if (score < 50) {
+    recommendations.push('Consider highlighting relevant job titles and experience');
+  }
+  if (certifications.length === 0) {
+    recommendations.push('Add relevant professional certifications if available');
+  }
+
+  return { score: Math.min(100, score), found, recommendations };
+}
+
+/**
+ * Main ATS compatibility analysis function
  */
 export async function analyzeATSCompatibility(
   resumeText: string,
@@ -76,14 +354,18 @@ export async function analyzeATSCompatibility(
       };
     }
 
-    console.log('Starting ATS compatibility analysis...');
+    console.log('Starting AI-powered ATS compatibility analysis...');
+
+    // Extract job keywords using AI
+    const jobKeywords = await extractJobKeywordsWithAI(jobDescription);
+    console.log('Extracted job keywords:', jobKeywords);
 
     // Perform individual analyses
-    const keywordAnalysis = analyzeKeywordMatch(resumeText, jobDescription);
-    const skillsAnalysis = await analyzeSkillsAlignment(resumeText, jobDescription);
+    const keywordAnalysis = analyzeKeywordMatch(resumeText, jobKeywords);
+    const skillsAnalysis = analyzeSkillsAlignment(resumeText, jobKeywords);
     const formatAnalysis = analyzeFormatCompatibility(resumeText);
     const contactAnalysis = analyzeContactInfo(resumeText);
-    const bonusAnalysis = analyzeBonusFeatures(resumeText, jobDescription);
+    const bonusAnalysis = analyzeBonusFeatures(resumeText, jobKeywords);
 
     // Calculate overall score
     const breakdown: ATSScoreBreakdown = {
@@ -111,7 +393,7 @@ export async function analyzeATSCompatibility(
       ...bonusAnalysis.recommendations
     ];
 
-    console.log(`ATS analysis complete. Overall score: ${overallScore}/100`);
+    console.log(`AI-powered ATS analysis complete. Overall score: ${overallScore}/100`);
 
     return {
       success: true,
@@ -136,234 +418,7 @@ export async function analyzeATSCompatibility(
 }
 
 /**
- * Analyze keyword matching between resume and job description (40% weight)
- */
-function analyzeKeywordMatch(resumeText: string, jobDescription: string) {
-  const resumeWords = extractKeywords(resumeText.toLowerCase());
-  const jobWords = extractKeywords(jobDescription.toLowerCase());
-
-  const matched: string[] = [];
-  const missing: string[] = [];
-
-  // Use Array operations instead of Set iteration
-  jobWords.forEach(keyword => {
-    if (resumeWords.includes(keyword)) {
-      matched.push(keyword);
-    } else {
-      missing.push(keyword);
-    }
-  });
-
-  const score = jobWords.length > 0 ? Math.round((matched.length / jobWords.length) * 100) : 0;
-  
-  const recommendations: string[] = [];
-  if (score < 70) {
-    recommendations.push(`Include more relevant keywords from the job description (${missing.slice(0, 5).join(', ')})`);
-  }
-  if (score < 50) {
-    recommendations.push('Consider restructuring your resume to better match the job requirements');
-  }
-  if (score < 30) {
-    recommendations.push('Your resume lacks key terms from the job description - this is critical for ATS systems');
-  }
-
-  return { score, matched, missing, recommendations };
-}
-
-/**
- * Analyze skills alignment using AI (30% weight)
- */
-async function analyzeSkillsAlignment(resumeText: string, jobDescription: string) {
-  try {
-    // For now, use a simplified approach without OpenAI to avoid additional API calls
-    // TODO: Implement OpenAI-based skills extraction in future iteration
-    
-    const resumeSkills = extractSkillsBasic(resumeText);
-    const jobSkills = extractSkillsBasic(jobDescription);
-    
-    const found = resumeSkills.filter(skill => 
-      jobSkills.some(jobSkill => 
-        jobSkill.toLowerCase().includes(skill.toLowerCase()) ||
-        skill.toLowerCase().includes(jobSkill.toLowerCase())
-      )
-    );
-    
-    const missing = jobSkills.filter(skill => 
-      !resumeSkills.some(resumeSkill => 
-        resumeSkill.toLowerCase().includes(skill.toLowerCase()) ||
-        skill.toLowerCase().includes(resumeSkill.toLowerCase())
-      )
-    );
-
-    const score = jobSkills.length > 0 ? Math.round((found.length / jobSkills.length) * 100) : 0;
-
-    const recommendations: string[] = [];
-    if (score < 80) {
-      recommendations.push(`Add missing skills: ${missing.slice(0, 3).join(', ')}`);
-    }
-    if (score < 60) {
-      recommendations.push('Consider gaining experience in the key skills mentioned in the job description');
-    }
-    if (score < 40) {
-      recommendations.push('Significant skills gap - focus on developing the required technical competencies');
-    }
-
-    return { score, found, missing, recommendations };
-
-  } catch (error) {
-    console.error('Skills analysis error:', error);
-    // Fallback to basic analysis
-    return { score: 50, found: [], missing: [], recommendations: ['Unable to perform detailed skills analysis'] };
-  }
-}
-
-/**
- * Analyze format compatibility (20% weight)
- */
-function analyzeFormatCompatibility(resumeText: string) {
-  let score = 100;
-  const recommendations: string[] = [];
-
-  // Check for proper sections
-  const hasContactSection = /contact|email|phone|address/i.test(resumeText);
-  const hasExperienceSection = /experience|work|employment|career/i.test(resumeText);
-  const hasEducationSection = /education|degree|university|college/i.test(resumeText);
-  const hasSkillsSection = /skills|technical|competencies/i.test(resumeText);
-
-  if (!hasContactSection) {
-    score -= 20;
-    recommendations.push('Add a clear contact information section');
-  }
-  if (!hasExperienceSection) {
-    score -= 30;
-    recommendations.push('Include a work experience section');
-  }
-  if (!hasEducationSection) {
-    score -= 20;
-    recommendations.push('Add an education section');
-  }
-  if (!hasSkillsSection) {
-    score -= 20;
-    recommendations.push('Include a skills section');
-  }
-
-  // Check for problematic formatting
-  const hasSpecialChars = /[^\w\s\-.,()@]/g.test(resumeText);
-  if (hasSpecialChars) {
-    score -= 10;
-    recommendations.push('Avoid special characters that may not parse correctly');
-  }
-
-  return { score: Math.max(0, score), recommendations };
-}
-
-/**
- * Analyze contact information completeness (5% weight)
- */
-function analyzeContactInfo(resumeText: string) {
-  let score = 0;
-  const recommendations: string[] = [];
-
-  // Check for email
-  const hasEmail = /@[\w.-]+\.\w+/.test(resumeText);
-  if (hasEmail) score += 50;
-  else recommendations.push('Include a professional email address');
-
-  // Check for phone
-  const hasPhone = /(\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/.test(resumeText);
-  if (hasPhone) score += 30;
-  else recommendations.push('Include a phone number');
-
-  // Check for location
-  const hasLocation = /(city|state|country|address|location)/i.test(resumeText);
-  if (hasLocation) score += 20;
-  else recommendations.push('Include your location (city, state)');
-
-  return { score: Math.min(100, score), recommendations };
-}
-
-/**
- * Analyze bonus features - Job titles, certifications, etc. (5% weight)
- */
-function analyzeBonusFeatures(resumeText: string, jobDescription: string) {
-  let score = 0;
-  const found: string[] = [];
-  const recommendations: string[] = [];
-
-  // Extract job titles from job description
-  const jobTitles = extractJobTitles(jobDescription);
-  const resumeTitles = extractJobTitles(resumeText);
-  
-  // Check for matching job titles
-  const matchingTitles = jobTitles.filter(title => 
-    resumeTitles.some(resumeTitle => 
-      resumeTitle.toLowerCase().includes(title.toLowerCase()) ||
-      title.toLowerCase().includes(resumeTitle.toLowerCase())
-    )
-  );
-  
-  if (matchingTitles.length > 0) {
-    score += 40;
-    found.push(...matchingTitles.map(title => `Job Title: ${title}`));
-  }
-
-  // Check for certifications
-  const certifications = extractCertifications(resumeText);
-  if (certifications.length > 0) {
-    score += 30;
-    found.push(...certifications.map(cert => `Certification: ${cert}`));
-  }
-
-  // Check for industry keywords
-  const industryKeywords = extractIndustryKeywords(resumeText, jobDescription);
-  if (industryKeywords.length > 0) {
-    score += 20;
-    found.push(...industryKeywords.map(keyword => `Industry Term: ${keyword}`));
-  }
-
-  // Check for years of experience
-  const experienceYears = extractExperienceYears(resumeText);
-  if (experienceYears > 0) {
-    score += 10;
-    found.push(`Experience: ${experienceYears} years`);
-  }
-
-  // Recommendations
-  if (score < 50) {
-    recommendations.push('Consider adding relevant certifications or highlighting job titles');
-  }
-  if (matchingTitles.length === 0) {
-    recommendations.push('Include job titles that match the target role');
-  }
-  if (certifications.length === 0) {
-    recommendations.push('Add relevant professional certifications if you have them');
-  }
-
-  return { score: Math.min(100, score), found, recommendations };
-}
-
-/**
- * Extract job titles from text
- */
-function extractJobTitles(text: string): string[] {
-  const titlePatterns = [
-    /(?:senior|junior|lead|principal|staff|associate)?\s*(?:software|web|mobile|frontend|backend|full.?stack|data|machine learning|ai|devops|cloud|security|qa|test|product|project|program|engineering|technical|systems|network|database|ui|ux|design)\s*(?:engineer|developer|architect|analyst|manager|director|specialist|consultant|lead|coordinator)/gi,
-    /(?:ceo|cto|cfo|vp|director|manager|coordinator|specialist|analyst|consultant|associate|intern)\b/gi
-  ];
-
-  const titles: string[] = [];
-  titlePatterns.forEach(pattern => {
-    const matches = text.match(pattern);
-    if (matches) {
-      titles.push(...matches.map(match => match.trim()));
-    }
-  });
-
-  return Array.from(new Set(titles)); // Remove duplicates
-}
-
-/**
- * Extract certifications from text
+ * Extract certifications from text (helper function)
  */
 function extractCertifications(text: string): string[] {
   const certPatterns = [
@@ -384,29 +439,7 @@ function extractCertifications(text: string): string[] {
 }
 
 /**
- * Extract industry-specific keywords
- */
-function extractIndustryKeywords(resumeText: string, jobDescription: string): string[] {
-  const industryTerms = [
-    'fintech', 'healthcare', 'e-commerce', 'saas', 'b2b', 'b2c', 'startup', 'enterprise',
-    'agile', 'scrum', 'kanban', 'ci/cd', 'microservices', 'api', 'rest', 'graphql',
-    'machine learning', 'artificial intelligence', 'blockchain', 'cryptocurrency',
-    'cloud computing', 'serverless', 'containerization', 'kubernetes', 'docker'
-  ];
-
-  const jobTerms = industryTerms.filter(term => 
-    jobDescription.toLowerCase().includes(term.toLowerCase())
-  );
-
-  const matchingTerms = jobTerms.filter(term => 
-    resumeText.toLowerCase().includes(term.toLowerCase())
-  );
-
-  return matchingTerms;
-}
-
-/**
- * Extract years of experience from text
+ * Extract years of experience from text (helper function)
  */
 function extractExperienceYears(text: string): number {
   const experiencePatterns = [
@@ -427,44 +460,4 @@ function extractExperienceYears(text: string): number {
   });
 
   return maxYears;
-}
-
-/**
- * Extract keywords from text
- */
-function extractKeywords(text: string): string[] {
-  const words = text
-    .replace(/[^\w\s]/g, ' ')
-    .split(/\s+/)
-    .filter(word => 
-      word.length >= ATS_CONFIG.minKeywordLength && 
-      !ATS_CONFIG.commonWords.has(word.toLowerCase())
-    )
-    .map(word => word.toLowerCase());
-
-  // Remove duplicates by converting to Set and back to Array
-  return Array.from(new Set(words));
-}
-
-/**
- * Basic skills extraction (to be enhanced with AI in future)
- */
-function extractSkillsBasic(text: string): string[] {
-  const commonSkills = [
-    // Technical skills
-    'javascript', 'python', 'java', 'react', 'node.js', 'sql', 'html', 'css',
-    'typescript', 'angular', 'vue', 'php', 'c++', 'c#', 'ruby', 'go', 'rust',
-    'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'git', 'jenkins', 'terraform',
-    
-    // Soft skills
-    'leadership', 'communication', 'teamwork', 'problem solving', 'analytical',
-    'project management', 'agile', 'scrum', 'collaboration', 'creativity',
-    
-    // Business skills
-    'marketing', 'sales', 'finance', 'accounting', 'operations', 'strategy',
-    'business development', 'customer service', 'data analysis', 'reporting'
-  ];
-
-  const textLower = text.toLowerCase();
-  return commonSkills.filter(skill => textLower.includes(skill));
 } 

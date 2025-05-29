@@ -125,17 +125,14 @@ export async function POST(request: NextRequest) {
     const sanitizedResumeText = extractedResumeText.slice(0, 10000);
     const sanitizedJobDescription = jobDescription.slice(0, 10000);
 
-    // Run ATS analysis and cover letter generation in parallel
-    console.log('Starting parallel processing: Cover letter generation and ATS analysis...');
+    // Generate cover letter first (which processes the job description)
+    console.log('Step 1: Generating cover letter and processing job description...');
     
-    const [coverLetterResult, atsResult] = await Promise.all([
-      generateCoverLetter({
-        resumeText: sanitizedResumeText,
-        jobDescription: sanitizedJobDescription,
-        tone: tone as 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal'
-      }),
-      analyzeATSCompatibility(sanitizedResumeText, sanitizedJobDescription)
-    ]);
+    const coverLetterResult = await generateCoverLetter({
+      resumeText: sanitizedResumeText,
+      jobDescription: sanitizedJobDescription,
+      tone: tone as 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal'
+    });
 
     // Handle cover letter generation errors
     if (!coverLetterResult.success) {
@@ -154,6 +151,14 @@ export async function POST(request: NextRequest) {
         { status: statusCode },
       );
     }
+
+    // Now run ATS analysis with the processed job description from OpenAI
+    console.log('Step 2: Running ATS analysis with processed job description...');
+    
+    const atsResult = await analyzeATSCompatibility(
+      sanitizedResumeText, 
+      coverLetterResult.processedJobDescription
+    );
 
     // Handle ATS analysis errors (non-blocking - we can still return cover letter)
     let atsAnalysis = null;
