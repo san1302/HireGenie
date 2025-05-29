@@ -7,7 +7,7 @@ import OpenAI from 'openai';
 export interface CoverLetterRequest {
   resumeText: string;
   jobDescription: string;
-  tone?: 'professional' | 'conversational' | 'enthusiastic' | 'formal';
+  tone?: 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal';
 }
 
 export interface CoverLetterResponse {
@@ -41,7 +41,7 @@ const TEMPERATURE = 0.7; // Balance between creativity and consistency
 export async function generateCoverLetter({
   resumeText,
   jobDescription,
-  tone = 'professional'
+  tone = 'Professional'
 }: CoverLetterRequest): Promise<CoverLetterResult> {
   try {
     // Validate inputs

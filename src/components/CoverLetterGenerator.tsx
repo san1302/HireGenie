@@ -21,6 +21,7 @@ export default function CoverLetterGenerator() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [tone, setTone] = useState("Professional");
   const [coverLetter, setCoverLetter] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -135,10 +136,9 @@ export default function CoverLetterGenerator() {
 
   const handleGenerate = async () => {
     if (!validateForm()) return;
-    
     setIsGenerating(true);
     setError("");
-    
+    setFileProcessing(true);
     try {
       const formData = new FormData();
 
@@ -149,12 +149,13 @@ export default function CoverLetterGenerator() {
       }
 
       formData.append("job_description", jobDescription);
+      formData.append("tone", tone);
 
       const response = await fetch("/api/generate", {
         method: "POST",
         body: formData,
       });
-
+      setFileProcessing(false);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to generate cover letter");
@@ -375,7 +376,7 @@ John Smith`;
                 <div className="flex items-center">
                   <Settings className="h-5 w-5 text-gray-400 mr-2" />
                   <span className="text-sm text-gray-600">Tone:</span>
-                  <select className="ml-2 text-sm border-none bg-transparent text-gray-700 focus:ring-0">
+                  <select className="ml-2 text-sm border-none bg-transparent text-gray-700 focus:ring-0" value={tone} onChange={(e) => setTone(e.target.value)}>
                     <option>Professional</option>
                     <option>Conversational</option>
                     <option>Enthusiastic</option>
@@ -403,7 +404,7 @@ John Smith`;
                 Your Cover Letter
               </h3>
               
-              {coverLetter ? (
+              {coverLetter && !isGenerating ? (
                 <>
                   <div className="bg-white border border-gray-200 rounded-lg p-5 h-[400px] overflow-y-auto cover-letter-content">
                     <div className="whitespace-pre-wrap text-gray-700">{coverLetter}</div>
