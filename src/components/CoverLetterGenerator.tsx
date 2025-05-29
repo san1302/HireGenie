@@ -11,9 +11,35 @@ import {
   Download,
   AlertCircle,
   RefreshCw,
-  X
+  X,
+  Target,
+  TrendingUp,
+  Award,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
+
+// TypeScript interface for ATS analysis
+interface ATSAnalysis {
+  success: boolean;
+  overallScore?: number;
+  breakdown?: {
+    keywordMatch: number;
+    skillsAlignment: number;
+    formatCompatibility: number;
+    contactInfo: number;
+    bonusFeatures: number;
+  };
+  recommendations?: string[];
+  missingKeywords?: string[];
+  matchedKeywords?: string[];
+  skillsFound?: string[];
+  skillsMissing?: string[];
+  bonusItems?: string[];
+  error?: string;
+  details?: string;
+}
 
 export default function CoverLetterGenerator() {
   const [activeTab, setActiveTab] = useState("upload");
@@ -23,6 +49,8 @@ export default function CoverLetterGenerator() {
   const [jobDescription, setJobDescription] = useState("");
   const [tone, setTone] = useState("Professional");
   const [coverLetter, setCoverLetter] = useState("");
+  const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
+  const [showATSDetails, setShowATSDetails] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
@@ -139,6 +167,8 @@ export default function CoverLetterGenerator() {
     setIsGenerating(true);
     setError("");
     setFileProcessing(true);
+    setAtsAnalysis(null); // Reset ATS analysis
+    
     try {
       const formData = new FormData();
 
@@ -156,6 +186,7 @@ export default function CoverLetterGenerator() {
         body: formData,
       });
       setFileProcessing(false);
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to generate cover letter");
@@ -164,9 +195,14 @@ export default function CoverLetterGenerator() {
       const data = await response.json();
       setCoverLetter(data.coverLetter || sampleCoverLetter);
       
+      // Set ATS analysis data
+      if (data.atsAnalysis) {
+        setAtsAnalysis(data.atsAnalysis);
+      }
+      
       toast({
-        title: "Cover letter generated",
-        description: "Your personalized cover letter is ready!",
+        title: "Analysis complete!",
+        description: "Your cover letter and ATS score are ready!",
       });
     } catch (error) {
       console.error("Error generating cover letter:", error);
@@ -202,10 +238,25 @@ export default function CoverLetterGenerator() {
 
   const handleReset = () => {
     setCoverLetter("");
+    setAtsAnalysis(null);
     setResumeFile(null);
     setFileName("");
     setResumeText("");
     setJobDescription("");
+    setShowATSDetails(false);
+  };
+
+  // ATS Score Color Helper
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-600 bg-green-50 border-green-200";
+    if (score >= 60) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    return "text-red-600 bg-red-50 border-red-200";
+  };
+
+  const getProgressColor = (score: number) => {
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
   // Sample cover letter for the UI
@@ -456,6 +507,219 @@ John Smith`;
                       </p>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* ATS Score Section */}
+              {atsAnalysis && atsAnalysis.success && (
+                <div className="mt-6">
+                  <div className="bg-white border border-gray-200 rounded-lg p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <Target className="h-5 w-5 text-indigo-600 mr-2" />
+                        <h4 className="text-lg font-medium text-gray-900">ATS Compatibility Score</h4>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getScoreColor(atsAnalysis.overallScore || 0)}`}>
+                        {atsAnalysis.overallScore}/100
+                      </div>
+                    </div>
+
+                    {/* Overall Score Progress Bar */}
+                    <div className="mb-6">
+                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Overall ATS Score</span>
+                        <span>{atsAnalysis.overallScore}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(atsAnalysis.overallScore || 0)}`}
+                          style={{ width: `${atsAnalysis.overallScore}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Score Breakdown */}
+                    {atsAnalysis.breakdown && (
+                      <div className="space-y-3 mb-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Keyword Match (40%)</span>
+                          <div className="flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(atsAnalysis.breakdown.keywordMatch)}`}
+                                style={{ width: `${atsAnalysis.breakdown.keywordMatch}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.keywordMatch}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Skills Alignment (30%)</span>
+                          <div className="flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(atsAnalysis.breakdown.skillsAlignment)}`}
+                                style={{ width: `${atsAnalysis.breakdown.skillsAlignment}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.skillsAlignment}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Format Compatibility (20%)</span>
+                          <div className="flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(atsAnalysis.breakdown.formatCompatibility)}`}
+                                style={{ width: `${atsAnalysis.breakdown.formatCompatibility}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.formatCompatibility}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Contact Info (5%)</span>
+                          <div className="flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(atsAnalysis.breakdown.contactInfo)}`}
+                                style={{ width: `${atsAnalysis.breakdown.contactInfo}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.contactInfo}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Bonus Features (5%)</span>
+                          <div className="flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(atsAnalysis.breakdown.bonusFeatures)}`}
+                                style={{ width: `${atsAnalysis.breakdown.bonusFeatures}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.bonusFeatures}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Toggle Details Button */}
+                    <button
+                      onClick={() => setShowATSDetails(!showATSDetails)}
+                      className="w-full flex items-center justify-center py-2 text-sm text-indigo-600 hover:text-indigo-700 border-t border-gray-200 mt-4 pt-4"
+                    >
+                      {showATSDetails ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-1" />
+                          Hide Details
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Show Detailed Analysis
+                        </>
+                      )}
+                    </button>
+
+                    {/* Detailed Analysis */}
+                    {showATSDetails && (
+                      <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
+                        {/* Recommendations */}
+                        {atsAnalysis.recommendations && atsAnalysis.recommendations.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                              <TrendingUp className="h-4 w-4 mr-1 text-blue-500" />
+                              Recommendations
+                            </h5>
+                            <ul className="space-y-1">
+                              {atsAnalysis.recommendations.map((rec, index) => (
+                                <li key={index} className="text-sm text-gray-600 flex items-start">
+                                  <span className="text-blue-500 mr-2">•</span>
+                                  {rec}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Missing Keywords */}
+                        {atsAnalysis.missingKeywords && atsAnalysis.missingKeywords.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-900 mb-2">Missing Keywords</h5>
+                            <div className="flex flex-wrap gap-1">
+                              {atsAnalysis.missingKeywords.slice(0, 10).map((keyword, index) => (
+                                <span key={index} className="px-2 py-1 bg-red-50 text-red-700 text-xs rounded border border-red-200">
+                                  {keyword}
+                                </span>
+                              ))}
+                              {atsAnalysis.missingKeywords.length > 10 && (
+                                <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded">
+                                  +{atsAnalysis.missingKeywords.length - 10} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Matched Keywords */}
+                        {atsAnalysis.matchedKeywords && atsAnalysis.matchedKeywords.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-900 mb-2">Matched Keywords</h5>
+                            <div className="flex flex-wrap gap-1">
+                              {atsAnalysis.matchedKeywords.slice(0, 10).map((keyword, index) => (
+                                <span key={index} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded border border-green-200">
+                                  {keyword}
+                                </span>
+                              ))}
+                              {atsAnalysis.matchedKeywords.length > 10 && (
+                                <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded">
+                                  +{atsAnalysis.matchedKeywords.length - 10} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bonus Items */}
+                        {atsAnalysis.bonusItems && atsAnalysis.bonusItems.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                              <Award className="h-4 w-4 mr-1 text-yellow-500" />
+                              Bonus Features Found
+                            </h5>
+                            <ul className="space-y-1">
+                              {atsAnalysis.bonusItems.map((item, index) => (
+                                <li key={index} className="text-sm text-gray-600 flex items-start">
+                                  <span className="text-yellow-500 mr-2">★</span>
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ATS Error Display */}
+              {atsAnalysis && !atsAnalysis.success && (
+                <div className="mt-6">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+                      <h4 className="text-sm font-medium text-yellow-800">ATS Analysis Unavailable</h4>
+                    </div>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      {atsAnalysis.error || "Unable to analyze ATS compatibility at this time."}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

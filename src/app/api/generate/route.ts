@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../supabase/server";
 import { parseResumeFromFile, parseResumeFromText } from "../../../lib/resume-parser";
 import { generateCoverLetter } from "../../../lib/openai";
+import { analyzeATSCompatibility } from "../../../lib/ats-analyzer";
 
 // Rate limiting map: IP -> {count, timestamp}
 type RateLimitEntry = { count: number; timestamp: number };
@@ -124,15 +125,19 @@ export async function POST(request: NextRequest) {
     const sanitizedResumeText = extractedResumeText.slice(0, 10000);
     const sanitizedJobDescription = jobDescription.slice(0, 10000);
 
-    // Generate cover letter using OpenAI
-    console.log(`Generating cover letter with tone: ${tone}`);
+    // Run ATS analysis and cover letter generation in parallel
+    console.log('Starting parallel processing: Cover letter generation and ATS analysis...');
     
-    const coverLetterResult = await generateCoverLetter({
-      resumeText: sanitizedResumeText,
-      jobDescription: sanitizedJobDescription,
-      tone: tone as 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal'
-    });
+    const [coverLetterResult, atsResult] = await Promise.all([
+      generateCoverLetter({
+        resumeText: sanitizedResumeText,
+        jobDescription: sanitizedJobDescription,
+        tone: tone as 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal'
+      }),
+      analyzeATSCompatibility(sanitizedResumeText, sanitizedJobDescription)
+    ]);
 
+    // Handle cover letter generation errors
     if (!coverLetterResult.success) {
       console.error("Cover letter generation failed:", coverLetterResult.error, coverLetterResult.details);
       
@@ -150,11 +155,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle ATS analysis errors (non-blocking - we can still return cover letter)
+    let atsAnalysis = null;
+    if (!atsResult.success) {
+      console.error("ATS analysis failed:", atsResult.error, atsResult.details);
+      // Don't fail the entire request, just log the error
+      atsAnalysis = {
+        error: atsResult.error,
+        details: atsResult.details
+      };
+    } else {
+      atsAnalysis = atsResult;
+    }
+
     console.log(`Cover letter generated successfully. Tokens used: ${coverLetterResult.tokensUsed || 'unknown'}`);
+    console.log(`ATS analysis completed. Overall score: ${atsResult.success ? atsResult.overallScore : 'failed'}/100`);
 
     return NextResponse.json({ 
       coverLetter: coverLetterResult.coverLetter,
-      tokensUsed: coverLetterResult.tokensUsed 
+      tokensUsed: coverLetterResult.tokensUsed,
+      atsAnalysis: atsAnalysis
     });
   } catch (error) {
     console.error("Error generating cover letter:", error);

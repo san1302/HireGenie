@@ -177,6 +177,7 @@ function createSystemPrompt(tone: string): string {
 
 Key requirements:
 - Write in a ${tone} tone
+- Keep it as organic as possible
 - Keep it concise (3-4 paragraphs)
 - Highlight relevant skills and experiences from the resume
 - Show enthusiasm for the specific role and company
