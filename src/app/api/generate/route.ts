@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../supabase/server";
+import { parseResumeFromFile, parseResumeFromText } from "../../../lib/resume-parser";
 
 // Rate limiting map: IP -> {count, timestamp}
 type RateLimitEntry = { count: number; timestamp: number };
@@ -74,18 +75,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract resume text from file if provided
-    let extractedResumeText = resumeText;
+    // Extract resume text using the resume parser service
+    let extractedResumeText = "";
+    
     if (resumeFile) {
-      // In a real implementation, you would use a library to extract text from PDF/DOCX
-      // For this demo, we'll just use the file name as a placeholder
-      extractedResumeText = `Sample resume content extracted from ${resumeFile.name}`;
+      console.log(`Processing resume file: ${resumeFile.name} (${resumeFile.size} bytes)`);
+      
+      const parseResult = await parseResumeFromFile(resumeFile);
+      
+      if (!parseResult.success) {
+        console.error("Resume parsing failed:", parseResult.error, parseResult.details);
+        return NextResponse.json(
+          { 
+            message: "Failed to parse resume file", 
+            error: parseResult.error,
+            details: parseResult.details 
+          },
+          { status: 400 },
+        );
+      }
+      
+      extractedResumeText = parseResult.text;
+      console.log(`Successfully extracted ${parseResult.word_count} words from resume`);
+      
+    } else if (resumeText) {
+      console.log("Processing resume text input");
+      
+      const parseResult = await parseResumeFromText(resumeText);
+      
+      if (!parseResult.success) {
+        console.error("Resume text parsing failed:", parseResult.error, parseResult.details);
+        return NextResponse.json(
+          { 
+            message: "Failed to parse resume text", 
+            error: parseResult.error,
+            details: parseResult.details 
+          },
+          { status: 400 },
+        );
+      }
+      
+      extractedResumeText = parseResult.text;
+      console.log(`Successfully processed ${parseResult.word_count} words from resume text`);
     }
 
     // Sanitize inputs
-    const sanitizedResumeText = extractedResumeText?.slice(0, 10000) || "";
+    const sanitizedResumeText = extractedResumeText.slice(0, 10000);
     const sanitizedJobDescription = jobDescription.slice(0, 10000);
-
+    console.log("sanitizedResumeText", extractedResumeText);
     // In a real implementation, you would call an AI service here
     // For this demo, we'll generate a placeholder cover letter
     const coverLetter = generatePlaceholderCoverLetter(
