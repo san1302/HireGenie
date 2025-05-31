@@ -500,26 +500,115 @@ John Smith`;
                   </div>
                 </>
               ) : (
-                <div className="bg-white border border-gray-200 border-dashed rounded-lg p-8 h-[400px] flex flex-col items-center justify-center text-center">
-                  <FileText className="h-12 w-12 text-gray-300 mb-4" />
-                  {isGenerating ? (
-                    <>
-                      <Loader className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
-                      <p className="text-gray-500 mb-2">
-                        Generating your cover letter...
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-gray-500 mb-2">
-                        Your generated cover letter will appear here
-                      </p>
+                <div className="space-y-6">
+                  {/* Cover Letter Placeholder */}
+                  <div className="bg-white border border-gray-200 border-dashed rounded-lg p-8 h-[400px] flex flex-col items-center justify-center text-center">
+                    <FileText className="h-12 w-12 text-gray-300 mb-4" />
+                    {isGenerating ? (
+                      <>
+                        <Loader className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
+                        <p className="text-gray-500 mb-2">
+                          Generating your cover letter...
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-gray-500 mb-2">
+                          Your generated cover letter will appear here
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Fill in your resume and job description, then click
+                          "Generate Letter"
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  {/* ATS Analysis Placeholder */}
+                  <div className="bg-white border border-gray-200 border-dashed rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <Target className="h-5 w-5 text-gray-300 mr-2" />
+                        <h4 className="text-lg font-medium text-gray-400">ATS Compatibility Analysis</h4>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200">
+                          Score will appear here
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview of what will be shown */}
+                    <div className="space-y-4 opacity-40">
+                      {/* Overall Score Preview */}
+                      <div>
+                        <div className="flex justify-between text-sm text-gray-400 mb-2">
+                          <span>Overall ATS Score</span>
+                          <span>--</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-3">
+                          <div className="h-3 bg-gray-200 rounded-full w-0"></div>
+                        </div>
+                      </div>
+
+                      {/* Score Breakdown Preview */}
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium text-gray-400 mb-3">Analysis Breakdown:</div>
+                        
+                        {[
+                          { label: "Parseability (30%)", width: 0 },
+                          { label: "Keyword Match (35%)", width: 0 },
+                          { label: "Skills Alignment (20%)", width: 0 },
+                          { label: "Format & Structure (10%)", width: 0 },
+                          { label: "Contact Info (3%)", width: 0 },
+                          { label: "Bonus Features (2%)", width: 0 }
+                        ].map((item, index) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <span className="text-sm text-gray-400">{item.label}</span>
+                            <div className="flex items-center">
+                              <div className="w-20 bg-gray-100 rounded-full h-2 mr-2">
+                                <div className="h-2 rounded-full bg-gray-200" style={{ width: `${item.width}%` }}></div>
+                              </div>
+                              <span className="text-sm font-medium text-gray-400 w-8">--</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Keywords Preview */}
+                      <div className="border-t border-gray-100 pt-4">
+                        <div className="text-sm font-medium text-gray-400 mb-2">Keywords Analysis:</div>
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-xs text-gray-400 mb-1 block">Missing Keywords:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {[1, 2, 3].map((i) => (
+                                <span key={i} className="px-2 py-1 bg-gray-50 text-gray-300 text-xs rounded border border-gray-100">
+                                  keyword {i}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-400 mb-1 block">Matched Keywords:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {[1, 2].map((i) => (
+                                <span key={i} className="px-2 py-1 bg-gray-50 text-gray-300 text-xs rounded border border-gray-100">
+                                  match {i}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-center mt-4">
                       <p className="text-sm text-gray-400">
-                        Fill in your resume and job description, then click
-                        "Generate Letter"
+                        Detailed ATS analysis will appear here after generation
                       </p>
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </div>
               )}
 

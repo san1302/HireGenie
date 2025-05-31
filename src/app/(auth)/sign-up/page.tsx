@@ -8,9 +8,11 @@ import { signUpAction } from "@/app/actions";
 import Navbar from "@/components/navbar";
 
 export default async function Signup(props: {
-  searchParams: Promise<Message>;
+  searchParams: Promise<Message & { returnTo?: string }>;
 }) {
   const searchParams = await props.searchParams;
+  const returnTo = searchParams.returnTo;
+  
   if ("message" in searchParams) {
     return (
       <div className="flex h-screen w-full flex-1 items-center justify-center p-4 sm:max-w-md">
@@ -31,7 +33,7 @@ export default async function Signup(props: {
                 Already have an account?{" "}
                 <Link
                   className="text-primary font-medium hover:underline transition-all"
-                  href="/sign-in"
+                  href={`/sign-in${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}
                 >
                   Sign in
                 </Link>

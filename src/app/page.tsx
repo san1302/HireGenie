@@ -2,7 +2,6 @@ import Footer from "@/components/footer";
 import Navbar from "@/components/navbar";
 import { createClient } from "../../supabase/server";
 import { Toaster } from "@/components/ui/toaster";
-import CoverLetterGenerator from "@/components/CoverLetterGenerator";
 import Hero from "@/components/hero";
 import Features from "@/components/features";
 import HowItWorks from "@/components/how-it-works";
@@ -28,10 +27,6 @@ export default async function Home() {
       <HowItWorks />
       {/* Coming Soon */}
       <ComingSoon />
-      {/* Cover Letter Generator */}
-      <section id="generator" className="bg-white">
-        <CoverLetterGenerator />
-      </section>
       {/* Pricing Section */}
       <Pricing />
       {/* Live Pricing Section */}

@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 interface LoginProps {
-  searchParams: Promise<Message>;
+  searchParams: Promise<Message & { returnTo?: string }>;
 }
 
 export default async function SignInPage({ searchParams }: LoginProps) {
-  const message = await searchParams;
+  const params = await searchParams;
+  const message = params;
+  const returnTo = params.returnTo;
 
   if ("message" in message) {
     return (
@@ -33,7 +35,7 @@ export default async function SignInPage({ searchParams }: LoginProps) {
                 Don't have an account?{" "}
                 <Link
                   className="text-primary font-medium hover:underline transition-all"
-                  href="/sign-up"
+                  href={`/sign-up${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}
                 >
                   Sign up
                 </Link>
@@ -77,6 +79,11 @@ export default async function SignInPage({ searchParams }: LoginProps) {
                 />
               </div>
             </div>
+
+            {/* Hidden input to pass returnTo parameter */}
+            {returnTo && (
+              <input type="hidden" name="returnTo" value={returnTo} />
+            )}
 
             <SubmitButton
               className="w-full"

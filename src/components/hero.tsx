@@ -1,8 +1,40 @@
+'use client';
+
 import Link from "next/link";
 import { ArrowRight, Check, FileText } from "lucide-react";
 import { Button } from "./ui/button";
+import { useRouter } from "next/navigation";
+import { createClient } from "../../supabase/client";
+import { useEffect, useState } from "react";
 
 export default function Hero() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkAuth();
+  }, []);
+
+  const handleTryItNow = () => {
+    if (isLoggedIn === null) {
+      // Still checking auth status
+      return;
+    }
+    
+    if (isLoggedIn) {
+      // User is logged in, go to dashboard with hash
+      router.push('/dashboard#generate');
+    } else {
+      // User is not logged in, redirect to sign-in with return URL
+      router.push('/sign-in?returnTo=/dashboard#generate');
+    }
+  };
+
   return (
     <section className="relative overflow-hidden bg-white">
       {/* Background gradient */}
@@ -28,15 +60,15 @@ export default function Hero() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                <Link href="#generator">
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium"
-                  >
-                    Try It Now
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  onClick={handleTryItNow}
+                  disabled={isLoggedIn === null}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium disabled:opacity-50"
+                >
+                  {isLoggedIn === null ? 'Loading...' : 'Try It Now'}
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
               </div>
 
               <div className="mt-12 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 text-sm text-gray-600">
