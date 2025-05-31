@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../supabase/server";
-import { parseResumeFromFile, parseResumeFromText } from "../../../lib/resume-parser";
+import { parseResumeFromFile, parseResumeFromText, type ResumeParserSuccessResponse } from "../../../lib/resume-parser";
 import { generateCoverLetter } from "../../../lib/openai";
-import { analyzeATSCompatibility } from "../../../lib/ats-analyzer";
+import { analyzeATSCompatibilityEnhanced } from "../../../lib/ats-analyzer";
 
 // Rate limiting map: IP -> {count, timestamp}
 type RateLimitEntry = { count: number; timestamp: number };
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Extract resume text using the resume parser service
     let extractedResumeText = "";
+    let resumeParserData: ResumeParserSuccessResponse | undefined = undefined;
     
     if (resumeFile) {
       console.log(`Processing resume file: ${resumeFile.name} (${resumeFile.size} bytes)`);
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
       }
       
       extractedResumeText = parseResult.text;
+      resumeParserData = parseResult; // Store the full parser data for ATS analysis
       console.log(`Successfully extracted ${parseResult.word_count} words from resume`);
       
     } else if (resumeText) {
@@ -118,6 +120,7 @@ export async function POST(request: NextRequest) {
       }
       
       extractedResumeText = parseResult.text;
+      resumeParserData = parseResult; // Store the full parser data for ATS analysis
       console.log(`Successfully processed ${parseResult.word_count} words from resume text`);
     }
 
@@ -152,12 +155,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Now run ATS analysis with the processed job description from OpenAI
-    console.log('Step 2: Running ATS analysis with processed job description...');
+    // Now run ATS analysis with the processed job description from OpenAI and resume parser data
+    console.log('Step 2: Running enhanced ATS analysis with processed job description and parser data...');
     
-    const atsResult = await analyzeATSCompatibility(
+    const atsResult = await analyzeATSCompatibilityEnhanced(
       sanitizedResumeText, 
-      coverLetterResult.processedJobDescription
+      coverLetterResult.processedJobDescription,
+      resumeParserData // Pass the enhanced resume parser data
     );
 
     // Handle ATS analysis errors (non-blocking - we can still return cover letter)

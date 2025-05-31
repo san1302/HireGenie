@@ -21,22 +21,35 @@ import {
 import { useToast } from "./ui/use-toast";
 
 // TypeScript interface for ATS analysis
+interface ATSRecommendation {
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  issue: string;
+  fix: string;
+  impact: string;
+}
+
 interface ATSAnalysis {
   success: boolean;
   overallScore?: number;
+  passFailStatus?: 'PASS' | 'FAIL' | 'REVIEW';
   breakdown?: {
+    parseability: number;
     keywordMatch: number;
     skillsAlignment: number;
     formatCompatibility: number;
     contactInfo: number;
     bonusFeatures: number;
   };
-  recommendations?: string[];
+  recommendations?: ATSRecommendation[];
   missingKeywords?: string[];
   matchedKeywords?: string[];
   skillsFound?: string[];
   skillsMissing?: string[];
   bonusItems?: string[];
+  criticalIssues?: string[];
+  sectionsFound?: string[];
+  missingCriticalSections?: string[];
+  sectionOrder?: string[];
   error?: string;
   details?: string;
 }
@@ -519,10 +532,44 @@ John Smith`;
                         <Target className="h-5 w-5 text-indigo-600 mr-2" />
                         <h4 className="text-lg font-medium text-gray-900">ATS Compatibility Score</h4>
                       </div>
-                      <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getScoreColor(atsAnalysis.overallScore || 0)}`}>
-                        {atsAnalysis.overallScore}/100
+                      <div className="flex items-center space-x-3">
+                        {/* Pass/Fail Status */}
+                        {atsAnalysis.passFailStatus && (
+                          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            atsAnalysis.passFailStatus === 'PASS' 
+                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              : atsAnalysis.passFailStatus === 'FAIL'
+                                ? 'bg-red-100 text-red-800 border border-red-200'
+                                : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                          }`}>
+                            {atsAnalysis.passFailStatus === 'PASS' ? '✓ LIKELY TO PASS' : 
+                             atsAnalysis.passFailStatus === 'FAIL' ? '✗ LIKELY REJECTED' : 
+                             '? NEEDS REVIEW'}
+                          </div>
+                        )}
+                        <div className={`px-3 py-1 rounded-full border text-sm font-medium ${getScoreColor(atsAnalysis.overallScore || 0)}`}>
+                          {atsAnalysis.overallScore}/100
+                        </div>
                       </div>
                     </div>
+
+                    {/* Critical Issues Alert */}
+                    {atsAnalysis.criticalIssues && atsAnalysis.criticalIssues.length > 0 && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center mb-2">
+                          <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                          <span className="text-sm font-medium text-red-800">Critical Issues Detected</span>
+                        </div>
+                        <ul className="space-y-1">
+                          {atsAnalysis.criticalIssues.map((issue, index) => (
+                            <li key={index} className="text-sm text-red-700 flex items-start">
+                              <span className="text-red-500 mr-2">•</span>
+                              {issue}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     {/* Overall Score Progress Bar */}
                     <div className="mb-6">
@@ -542,7 +589,20 @@ John Smith`;
                     {atsAnalysis.breakdown && (
                       <div className="space-y-3 mb-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Keyword Match (40%)</span>
+                          <span className="text-sm text-gray-600">Parseability (30%)</span>
+                          <div className="flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(atsAnalysis.breakdown.parseability)}`}
+                                style={{ width: `${atsAnalysis.breakdown.parseability}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.parseability}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Keyword Match (35%)</span>
                           <div className="flex items-center">
                             <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
@@ -555,7 +615,7 @@ John Smith`;
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Skills Alignment (30%)</span>
+                          <span className="text-sm text-gray-600">Skills Alignment (20%)</span>
                           <div className="flex items-center">
                             <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
@@ -568,7 +628,7 @@ John Smith`;
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Format Compatibility (20%)</span>
+                          <span className="text-sm text-gray-600">Format & Structure (10%)</span>
                           <div className="flex items-center">
                             <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
@@ -581,7 +641,7 @@ John Smith`;
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Contact Info (5%)</span>
+                          <span className="text-sm text-gray-600">Contact Info (3%)</span>
                           <div className="flex items-center">
                             <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
@@ -594,7 +654,7 @@ John Smith`;
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Bonus Features (5%)</span>
+                          <span className="text-sm text-gray-600">Bonus Features (2%)</span>
                           <div className="flex items-center">
                             <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
@@ -629,21 +689,103 @@ John Smith`;
                     {/* Detailed Analysis */}
                     {showATSDetails && (
                       <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
-                        {/* Recommendations */}
+                        {/* Enhanced Recommendations */}
                         {atsAnalysis.recommendations && atsAnalysis.recommendations.length > 0 && (
                           <div>
-                            <h5 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                            <h5 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
                               <TrendingUp className="h-4 w-4 mr-1 text-blue-500" />
                               Recommendations
                             </h5>
-                            <ul className="space-y-1">
+                            <div className="space-y-3">
                               {atsAnalysis.recommendations.map((rec, index) => (
-                                <li key={index} className="text-sm text-gray-600 flex items-start">
-                                  <span className="text-blue-500 mr-2">•</span>
-                                  {rec}
-                                </li>
+                                <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                                  rec.priority === 'CRITICAL' 
+                                    ? 'bg-red-50 border-red-400'
+                                    : rec.priority === 'HIGH'
+                                      ? 'bg-orange-50 border-orange-400'
+                                      : rec.priority === 'MEDIUM'
+                                        ? 'bg-yellow-50 border-yellow-400'
+                                        : 'bg-blue-50 border-blue-400'
+                                }`}>
+                                  <div className="flex items-start justify-between mb-1">
+                                    <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                      rec.priority === 'CRITICAL' 
+                                        ? 'bg-red-100 text-red-800'
+                                        : rec.priority === 'HIGH'
+                                          ? 'bg-orange-100 text-orange-800'
+                                          : rec.priority === 'MEDIUM'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {rec.priority}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium text-gray-900 mb-1">{rec.issue}</p>
+                                  <p className="text-sm text-gray-700 mb-1"><strong>Fix:</strong> {rec.fix}</p>
+                                  <p className="text-xs text-gray-600"><strong>Impact:</strong> {rec.impact}</p>
+                                </div>
                               ))}
-                            </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Structural Analysis */}
+                        {(atsAnalysis.sectionsFound || atsAnalysis.missingCriticalSections || atsAnalysis.sectionOrder) && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                              <FileText className="h-4 w-4 mr-1 text-purple-500" />
+                              Resume Structure Analysis
+                            </h5>
+                            
+                            {/* Sections Found */}
+                            {atsAnalysis.sectionsFound && atsAnalysis.sectionsFound.length > 0 && (
+                              <div className="mb-3">
+                                <h6 className="text-xs font-medium text-gray-700 mb-2">Detected Sections</h6>
+                                <div className="flex flex-wrap gap-1">
+                                  {atsAnalysis.sectionsFound.map((section, index) => (
+                                    <span key={index} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded border border-green-200 capitalize">
+                                      {section}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Missing Critical Sections */}
+                            {atsAnalysis.missingCriticalSections && atsAnalysis.missingCriticalSections.length > 0 && (
+                              <div className="mb-3">
+                                <h6 className="text-xs font-medium text-gray-700 mb-2">Missing Critical Sections</h6>
+                                <div className="flex flex-wrap gap-1">
+                                  {atsAnalysis.missingCriticalSections.map((section, index) => (
+                                    <span key={index} className="px-2 py-1 bg-red-50 text-red-700 text-xs rounded border border-red-200 capitalize">
+                                      {section}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Section Order */}
+                            {atsAnalysis.sectionOrder && atsAnalysis.sectionOrder.length > 0 && (
+                              <div className="mb-3">
+                                <h6 className="text-xs font-medium text-gray-700 mb-2">Section Order</h6>
+                                <div className="flex flex-wrap gap-1">
+                                  {atsAnalysis.sectionOrder.map((section, index) => (
+                                    <div key={index} className="flex items-center">
+                                      <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-200 capitalize">
+                                        {index + 1}. {section}
+                                      </span>
+                                      {index < atsAnalysis.sectionOrder!.length - 1 && (
+                                        <span className="mx-1 text-gray-400">→</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Recommended order: Contact → Summary → Experience → Education → Skills → Certifications
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
 
