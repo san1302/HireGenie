@@ -180,6 +180,52 @@ export async function POST(request: NextRequest) {
     console.log(`Cover letter generated successfully. Tokens used: ${coverLetterResult.tokensUsed || 'unknown'}`);
     console.log(`ATS analysis completed. Overall score: ${atsResult.success ? atsResult.overallScore : 'failed'}/100`);
 
+    // Save generation to database for authenticated users
+    if (user) {
+      console.log('Step 3: Saving generation to database...');
+      console.log('User ID:', user.id);
+      console.log('User email:', user.email);
+      
+      // First, let's check if the user exists in public.users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userError) {
+        console.error('Error checking user existence:', userError);
+        console.log('User might not exist in public.users table');
+      } else {
+        console.log('User found in public.users:', userData);
+      }
+      
+      const { data: insertData, error: dbError } = await supabase
+        .from('cover_letters')
+        .insert({
+          user_id: user.id, // This should be the UUID from auth.users
+          cover_letter_content: coverLetterResult.coverLetter,
+          job_description: sanitizedJobDescription,
+          resume_filename: resumeFile?.name || null,
+          tone: tone,
+          ats_score: atsResult.success ? atsResult.overallScore : null,
+          ats_analysis: atsResult.success ? atsResult : null,
+          tokens_used: coverLetterResult.tokensUsed || null
+        })
+        .select(); // Add select to get back the inserted data
+
+      if (dbError) {
+        console.error('Error saving cover letter to database:', dbError);
+        console.error('Error details:', JSON.stringify(dbError, null, 2));
+        console.error('Error code:', dbError.code);
+        console.error('Error hint:', dbError.hint);
+        // Don't fail the request, just log the error
+      } else {
+        console.log('Cover letter saved to database successfully');
+        console.log('Inserted data:', insertData);
+      }
+    }
+
     return NextResponse.json({ 
       coverLetter: coverLetterResult.coverLetter,
       tokensUsed: coverLetterResult.tokensUsed,

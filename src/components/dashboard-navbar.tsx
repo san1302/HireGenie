@@ -52,14 +52,18 @@ export default function DashboardNavbar() {
           </Link>
           
           <div className="hidden md:flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-              <Home className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-              <FileText className="h-4 w-4 mr-2" />
-              History
-            </Button>
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+                <Home className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
+            <Link href="/dashboard/history">
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+                <FileText className="h-4 w-4 mr-2" />
+                History
+              </Button>
+            </Link>
           </div>
         </div>
         
@@ -88,18 +92,24 @@ export default function DashboardNavbar() {
                 <p className="text-xs text-gray-500">Pro Plan Member</p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <UserCircle className="h-4 w-4 mr-2" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <FileText className="h-4 w-4 mr-2" />
-                Cover Letter History
-              </DropdownMenuItem>
+              <Link href="/dashboard/settings">
+                <DropdownMenuItem className="cursor-pointer">
+                  <UserCircle className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/dashboard/settings">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/dashboard/history">
+                <DropdownMenuItem className="cursor-pointer">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Cover Letter History
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className="cursor-pointer text-red-600 focus:text-red-600"

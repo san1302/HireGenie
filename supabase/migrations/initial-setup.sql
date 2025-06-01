@@ -60,10 +60,29 @@ CREATE INDEX IF NOT EXISTS webhook_events_type_idx ON public.webhook_events(type
 CREATE INDEX IF NOT EXISTS webhook_events_polar_event_id_idx ON public.webhook_events(polar_event_id);
 CREATE INDEX IF NOT EXISTS webhook_events_event_type_idx ON public.webhook_events(event_type);
 
+-- Cover letters table for storing user generations
+CREATE TABLE IF NOT EXISTS public.cover_letters (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id),
+    cover_letter_content text NOT NULL,
+    job_description text,
+    resume_filename text,
+    tone text DEFAULT 'Professional',
+    ats_score integer,
+    ats_analysis jsonb,
+    tokens_used integer,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS cover_letters_user_id_idx ON public.cover_letters(user_id);
+CREATE INDEX IF NOT EXISTS cover_letters_created_at_idx ON public.cover_letters(created_at);
+
 -- Add RLS (Row Level Security) policies
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cover_letters ENABLE ROW LEVEL SECURITY;
 
 -- Create policies if they don't exist
 DO $$
@@ -90,6 +109,18 @@ BEGIN
         -- Create policy for subscriptions
         EXECUTE 'CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
                 FOR SELECT USING (auth.uid()::text = user_id)';
+    END IF;
+
+    -- Check if the policy for cover_letters exists
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'cover_letters' 
+        AND policyname = 'Users can view own cover letters'
+    ) THEN
+        -- Create policy for cover letters
+        EXECUTE 'CREATE POLICY "Users can view own cover letters" ON public.cover_letters
+                FOR ALL USING (auth.uid() = user_id)';
     END IF;
 END
 $$;

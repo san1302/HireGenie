@@ -19,6 +19,7 @@ import { Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -37,12 +38,62 @@ export default async function Dashboard() {
     return redirect("/pricing");
   }
 
-  // Mock data for demo - in real app, fetch from database
+  // Fetch real statistics from database
+  const { data: coverLetters, error } = await supabase
+    .from("cover_letters")
+    .select("ats_score, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching cover letters for stats:", error);
+  }
+
+  const letters = coverLetters || [];
+  
+  // Calculate real statistics
+  const getTimeAgo = (dateString: string | null) => {
+    if (!dateString) return "Never";
+    
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
+
+  const calculateAverageScore = (letters: any[]) => {
+    const lettersWithScores = letters.filter(l => l.ats_score !== null);
+    if (lettersWithScores.length === 0) return "N/A";
+    
+    const average = lettersWithScores.reduce((acc, l) => acc + l.ats_score, 0) / lettersWithScores.length;
+    return `${Math.round(average)}%`;
+  };
+
+  const getThisMonthCount = (letters: any[]) => {
+    const now = new Date();
+    return letters.filter(l => {
+      const letterDate = new Date(l.created_at);
+      return letterDate.getMonth() === now.getMonth() && letterDate.getFullYear() === now.getFullYear();
+    }).length;
+  };
+
+  // Get subscription info for plan type
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .single();
+
   const stats = {
-    coverLettersGenerated: 12,
-    lastGenerated: "2 hours ago",
-    successRate: "94%",
-    planType: "Pro"
+    coverLettersGenerated: letters.length,
+    lastGenerated: getTimeAgo(letters[0]?.created_at || null),
+    successRate: calculateAverageScore(letters),
+    planType: subscription ? "Pro" : "Free",
+    thisMonth: getThisMonthCount(letters)
   };
 
   return (
@@ -90,7 +141,7 @@ export default async function Dashboard() {
                 <FileText className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats.coverLettersGenerated}</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.thisMonth}</div>
                 <p className="text-xs text-gray-500">Generated this month</p>
               </CardContent>
             </Card>
@@ -111,7 +162,7 @@ export default async function Dashboard() {
             <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
-                  Success Rate
+                  Average ATS Score
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-purple-600" />
               </CardHeader>
@@ -124,13 +175,13 @@ export default async function Dashboard() {
             <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
-                  Quality Score
+                  Total Generated
                 </CardTitle>
                 <Award className="h-4 w-4 text-yellow-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">A+</div>
-                <p className="text-xs text-gray-500">Average rating</p>
+                <div className="text-2xl font-bold text-gray-900">{stats.coverLettersGenerated}</div>
+                <p className="text-xs text-gray-500">All time total</p>
               </CardContent>
             </Card>
           </div>
@@ -172,21 +223,27 @@ export default async function Dashboard() {
                   <CardTitle className="text-lg text-gray-900">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start" size="sm">
-                    <FileText className="h-4 w-4 mr-2" />
-                    View History
-                    <ChevronRight className="h-4 w-4 ml-auto" />
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                    <ChevronRight className="h-4 w-4 ml-auto" />
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" size="sm">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Analytics
-                    <ChevronRight className="h-4 w-4 ml-auto" />
-                  </Button>
+                  <Link href="/dashboard/history">
+                    <Button variant="outline" className="w-full justify-start" size="sm">
+                      <FileText className="h-4 w-4 mr-2" />
+                      View History
+                      <ChevronRight className="h-4 w-4 ml-auto" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/settings">
+                    <Button variant="outline" className="w-full justify-start" size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                      <ChevronRight className="h-4 w-4 ml-auto" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/analytics">
+                    <Button variant="outline" className="w-full justify-start" size="sm">
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Analytics
+                      <ChevronRight className="h-4 w-4 ml-auto" />
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
 

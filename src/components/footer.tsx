@@ -35,9 +35,9 @@ export default function Footer() {
       
       {/* Main footer content */}
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {/* Logo and about */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <div className="flex items-center mb-4">
               <div className="font-bold text-2xl text-white">HireGenie.io</div>
             </div>
@@ -76,15 +76,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#waitlist"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
-                >
-                  <span>Join Waitlist</span>
-                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/dashboard"
                   className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
@@ -94,7 +85,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/pricing"
                   className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
                   <span>Pricing</span>
@@ -104,77 +95,25 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Resources Column */}
+          {/* Quick Links Column */}
           <div>
-            <h3 className="font-semibold text-white text-lg mb-4">Resources</h3>
+            <h3 className="font-semibold text-white text-lg mb-4">Quick Links</h3>
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="#"
+                  href="/"
                   className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
-                  <span>Blog</span>
+                  <span>Home</span>
                   <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/dashboard"
                   className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
-                  <span>Help Center</span>
-                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
-                >
-                  <span>Guides</span>
-                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
-                >
-                  <span>Documentation</span>
-                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal Column */}
-          <div>
-            <h3 className="font-semibold text-white text-lg mb-4">Legal</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
-                >
-                  <span>Privacy Policy</span>
-                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
-                >
-                  <span>Terms of Service</span>
-                  <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center group"
-                >
-                  <span>Cookie Policy</span>
+                  <span>Get Started</span>
                   <ArrowRight className="ml-2 h-3 w-0 group-hover:w-3 transition-all opacity-0 group-hover:opacity-100" />
                 </Link>
               </li>
@@ -188,14 +127,14 @@ export default function Footer() {
           </div>
           
           <div className="flex space-x-6 text-sm text-gray-500">
-            <Link href="#" className="hover:text-gray-300 transition-colors">
-              Privacy
+            <Link href="/" className="hover:text-gray-300 transition-colors">
+              Home
             </Link>
-            <Link href="#" className="hover:text-gray-300 transition-colors">
-              Terms
+            <Link href="/pricing" className="hover:text-gray-300 transition-colors">
+              Pricing
             </Link>
-            <Link href="#" className="hover:text-gray-300 transition-colors">
-              Cookies
+            <Link href="/dashboard" className="hover:text-gray-300 transition-colors">
+              Dashboard
             </Link>
           </div>
         </div>

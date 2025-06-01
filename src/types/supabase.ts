@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cover_letters: {
+        Row: {
+          id: string
+          user_id: string | null
+          cover_letter_content: string
+          job_description: string | null
+          resume_filename: string | null
+          tone: string | null
+          ats_score: number | null
+          ats_analysis: Json | null
+          tokens_used: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          cover_letter_content: string
+          job_description?: string | null
+          resume_filename?: string | null
+          tone?: string | null
+          ats_score?: number | null
+          ats_analysis?: Json | null
+          tokens_used?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          cover_letter_content?: string
+          job_description?: string | null
+          resume_filename?: string | null
+          tone?: string | null
+          ats_score?: number | null
+          ats_analysis?: Json | null
+          tokens_used?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cover_letters_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number | null

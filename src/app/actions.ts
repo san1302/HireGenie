@@ -5,6 +5,7 @@ import { encodedRedirect } from "@/utils/utils";
 import { Polar } from "@polar-sh/sdk";
 import { redirect } from "next/navigation";
 import { createClient } from "../../supabase/server";
+import { headers } from "next/headers";
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -84,6 +85,62 @@ export const signInAction = async (formData: FormData) => {
   // Redirect to returnTo URL if provided, otherwise default to dashboard
   const redirectUrl = returnTo || "/dashboard";
   return redirect(redirectUrl);
+};
+
+export const signInWithGoogleAction = async (formData: FormData) => {
+  const returnTo = formData.get("returnTo") as string;
+  const supabase = await createClient();
+  const headersList = await headers();
+  const origin = headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+  // Build redirect URL with returnTo parameter if provided
+  const redirectTo = returnTo 
+    ? `${origin}/auth/callback?redirect_to=${encodeURIComponent(returnTo)}`
+    : `${origin}/auth/callback?redirect_to=${encodeURIComponent('/dashboard')}`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+    },
+  });
+
+  if (error) {
+    console.error('Google OAuth error:', error);
+    return encodedRedirect("error", "/sign-in", "Authentication failed. Please try again.");
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
+};
+
+export const signUpWithGoogleAction = async (formData: FormData) => {
+  const returnTo = formData.get("returnTo") as string;
+  const supabase = await createClient();
+  const headersList = await headers();
+  const origin = headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+  // Build redirect URL with returnTo parameter if provided
+  const redirectTo = returnTo 
+    ? `${origin}/auth/callback?redirect_to=${encodeURIComponent(returnTo)}`
+    : `${origin}/auth/callback?redirect_to=${encodeURIComponent('/dashboard')}`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+    },
+  });
+
+  if (error) {
+    console.error('Google OAuth error:', error);
+    return encodedRedirect("error", "/sign-up", "Authentication failed. Please try again.");
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

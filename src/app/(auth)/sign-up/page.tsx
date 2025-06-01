@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
-import { signUpAction } from "@/app/actions";
+import { signUpAction, signUpWithGoogleAction } from "@/app/actions";
+import { GoogleOAuthButton } from "@/components/google-oauth-button";
 import Navbar from "@/components/navbar";
 
 export default async function Signup(props: {
@@ -26,7 +27,7 @@ export default async function Signup(props: {
       <Navbar />
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
         <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-sm">
-          <form className="flex flex-col space-y-6">
+          <div className="flex flex-col space-y-6">
             <div className="space-y-2 text-center">
               <h1 className="text-3xl font-semibold tracking-tight">Sign up</h1>
               <p className="text-sm text-muted-foreground">
@@ -40,7 +41,22 @@ export default async function Signup(props: {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <GoogleOAuthButton 
+              mode="signup" 
+              returnTo={returnTo}
+              formAction={signUpWithGoogleAction}
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+              </div>
+            </div>
+
+            <form className="flex flex-col space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="full_name" className="text-sm font-medium">
                   Full Name
@@ -83,18 +99,18 @@ export default async function Signup(props: {
                   className="w-full"
                 />
               </div>
-            </div>
 
-            <SubmitButton
-              formAction={signUpAction}
-              pendingText="Signing up..."
-              className="w-full"
-            >
-              Sign up
-            </SubmitButton>
+              <SubmitButton
+                formAction={signUpAction}
+                pendingText="Signing up..."
+                className="w-full"
+              >
+                Sign up
+              </SubmitButton>
+            </form>
 
             <FormMessage message={searchParams} />
-          </form>
+          </div>
         </div>
         <SmtpMessage />
       </div>
