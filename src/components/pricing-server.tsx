@@ -3,6 +3,7 @@ import { createClient } from "../../supabase/server";
 import { Check } from "lucide-react";
 import { Button } from "./ui/button";
 import Link from "next/link";
+import { checkUserSubscription } from "@/app/actions";
 
 export default async function PricingServer() {
     const supabase = await createClient();
@@ -10,6 +11,15 @@ export default async function PricingServer() {
     const { data: plans, error } = await supabase.functions.invoke('supabase-functions-get-plans');
     const result = plans?.items;
     console.log("plans", result);
+    
+    // Get user subscription status if authenticated
+    let userSubscription = null;
+    if (user) {
+        const subscriptionResult = await checkUserSubscription(user.id);
+        if (subscriptionResult.success && subscriptionResult.hasActiveSubscription) {
+            userSubscription = subscriptionResult;
+        }
+    }
     
     if (error) {
         console.error("Error fetching plans:", error);
@@ -37,6 +47,36 @@ export default async function PricingServer() {
         return a.name.localeCompare(b.name); // Alphabetical for others
     }) : [];
 
+    // Determine Free plan button state
+    const getFreeCardButton = () => {
+        if (!user) {
+            return {
+                text: "Get Started Free",
+                href: "/sign-up",
+                disabled: false,
+                variant: "default"
+            };
+        }
+        
+        if (userSubscription) {
+            return {
+                text: "Go to Dashboard",
+                href: "/dashboard",
+                disabled: false,
+                variant: "secondary"
+            };
+        }
+        
+        return {
+            text: "Go to Dashboard",
+            href: "/dashboard",
+            disabled: false,
+            variant: "default"
+        };
+    };
+
+    const freeCardButton = getFreeCardButton();
+
     return (
         <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
             {/* Background decoration */}
@@ -55,7 +95,9 @@ export default async function PricingServer() {
                         Choose Your Plan
                     </h2>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                        Get started with our free plan or upgrade to unlock unlimited cover letters and premium features
+                        {userSubscription 
+                            ? `You're currently on the ${userSubscription.planDetails?.planName || 'Pro'} plan` 
+                            : "Get started with our free plan or upgrade to unlock unlimited cover letters and premium features"}
                     </p>
                 </div>
 
@@ -64,6 +106,15 @@ export default async function PricingServer() {
                     <div className="group relative">
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-200 to-slate-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
                         <div className="relative bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1 border border-gray-200 h-full flex flex-col">
+                            {/* Current plan indicator */}
+                            {user && !userSubscription && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1.5 rounded-full text-xs font-medium shadow-lg border border-white/20">
+                                        Current Plan
+                                    </div>
+                                </div>
+                            )}
+                            
                             {/* Subtle background overlay for Free */}
                             <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-slate-50 opacity-30 rounded-3xl"></div>
                             
@@ -121,21 +172,35 @@ export default async function PricingServer() {
                                     <Button 
                                         asChild 
                                         size="lg"
-                                        className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border-0 font-semibold py-6 text-lg transition-all duration-200"
+                                        className={`w-full font-semibold py-6 text-lg transition-all duration-200 ${
+                                            freeCardButton.variant === "secondary" 
+                                                ? "bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 text-blue-700 border-0"
+                                                : "bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border-0"
+                                        }`}
+                                        disabled={freeCardButton.disabled}
                                     >
-                                        <Link href="/sign-up">Get Started Free</Link>
+                                        <Link href={freeCardButton.href}>{freeCardButton.text}</Link>
                                     </Button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Dynamic Plans from Polar - Pro will be first due to sorting */}
+                    {/* Dynamic Plans from Polar */}
                     {sortedPlans?.map((item: any, index: number) => {
                         const isPopular = item.name === "Pro";
+                        const isCurrentPlan = userSubscription?.planDetails?.planName === item.name;
+                        
                         return (
                             <div key={item.id} className="group relative">
-                                {isPopular && (
+                                {isCurrentPlan && (
+                                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg border border-white/20">
+                                            Current Plan
+                                        </div>
+                                    </div>
+                                )}
+                                {isPopular && !isCurrentPlan && (
                                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                                         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
                                             Most Popular
@@ -144,7 +209,12 @@ export default async function PricingServer() {
                                 )}
                                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-200 to-purple-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
                                 <div className="relative">
-                                    <PricingCard item={item} user={user} />
+                                    <PricingCard 
+                                        item={item} 
+                                        user={user} 
+                                        userSubscription={userSubscription}
+                                        isCurrentPlan={isCurrentPlan}
+                                    />
                                 </div>
                             </div>
                         );

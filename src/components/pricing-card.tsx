@@ -3,16 +3,21 @@
 import { supabase } from "../../supabase/supabase";
 import { Button } from "./ui/button";
 import { User } from "@supabase/supabase-js";
-import { Check, Loader2, Crown } from "lucide-react";
+import { Check, Loader2, Crown, Settings } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "./ui/use-toast";
+import Link from "next/link";
 
 export default function PricingCard({
   item,
   user,
+  userSubscription,
+  isCurrentPlan,
 }: {
   item: any;
   user: User | null;
+  userSubscription?: any;
+  isCurrentPlan?: boolean;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -95,6 +100,43 @@ export default function PricingCard({
   const isPremium = item.name === "Lifetime";
   const price = item?.prices?.[0]?.priceAmount / 100;
 
+  // Determine button state based on subscription status
+  const getButtonConfig = () => {
+    if (isCurrentPlan) {
+      return {
+        text: "Go to Dashboard",
+        href: "/dashboard",
+        variant: "secondary",
+        disabled: false,
+        isLink: true,
+        icon: null
+      };
+    }
+
+    if (!user) {
+      return {
+        text: isPremium ? "Get Lifetime Access" : "Get Started",
+        href: "/sign-in",
+        variant: "primary",
+        disabled: false,
+        isLink: true,
+        icon: null
+      };
+    }
+
+    // User is authenticated but doesn't have this plan
+    return {
+      text: isPremium ? "Get Lifetime Access" : "Get Started",
+      href: null,
+      variant: "primary",
+      disabled: false,
+      isLink: false,
+      icon: null
+    };
+  };
+
+  const buttonConfig = getButtonConfig();
+
   // Determine card styling based on plan type
   const getCardStyling = () => {
     if (isPremium) {
@@ -104,7 +146,9 @@ export default function PricingCard({
         priceClass: "bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent",
         checkBg: "bg-gradient-to-r from-indigo-100 to-purple-100",
         checkIcon: "text-indigo-600",
-        buttonClass: "bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white shadow-md hover:shadow-lg"
+        buttonClass: isCurrentPlan 
+          ? "bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 text-blue-700 border-0"
+          : "bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white shadow-md hover:shadow-lg"
       };
     } else if (isPopular) {
       return {
@@ -113,7 +157,9 @@ export default function PricingCard({
         priceClass: "bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent",
         checkBg: "bg-gradient-to-r from-blue-100 to-purple-100",
         checkIcon: "text-blue-600",
-        buttonClass: "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg"
+        buttonClass: isCurrentPlan 
+          ? "bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 text-blue-700 border-0"
+          : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg"
       };
     } else {
       return {
@@ -182,23 +228,34 @@ export default function PricingCard({
         
         {/* Button section - fixed at bottom */}
         <div className="mt-auto">
-          <Button
-            onClick={async () => {
-              await handleCheckout(item?.prices?.[0]?.productId);
-            }}
-            disabled={isLoading}
-            size="lg"
-            className={`w-full font-semibold py-6 text-lg transition-all duration-200 ${styling.buttonClass}`}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              isPremium ? "Get Lifetime Access" : "Get Started"
-            )}
-          </Button>
+          {buttonConfig.isLink ? (
+            <Button
+              asChild
+              size="lg"
+              className={`w-full font-semibold py-6 text-lg transition-all duration-200 ${styling.buttonClass}`}
+              disabled={buttonConfig.disabled}
+            >
+              <Link href={buttonConfig.href!}>{buttonConfig.text}</Link>
+            </Button>
+          ) : (
+            <Button
+              onClick={async () => {
+                await handleCheckout(item?.prices?.[0]?.productId);
+              }}
+              disabled={isLoading || buttonConfig.disabled}
+              size="lg"
+              className={`w-full font-semibold py-6 text-lg transition-all duration-200 ${styling.buttonClass}`}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                buttonConfig.text
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>

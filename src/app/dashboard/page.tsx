@@ -10,11 +10,13 @@ import {
   Settings,
   User,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  AlertCircle,
+  Crown
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "../../../supabase/server";
-import { manageSubscriptionAction } from "../actions";
+import { manageSubscriptionAction, checkUserUsage } from "../actions";
 import { Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +39,9 @@ export default async function Dashboard() {
   if (!result) {
     return redirect("/pricing");
   }
+
+  // Check user usage for free plan users
+  const usageResult = await checkUserUsage(user.id);
 
   // Fetch real statistics from database
   const { data: coverLetters, error } = await supabase
@@ -88,6 +93,8 @@ export default async function Dashboard() {
     .eq("status", "active")
     .single();
   console.log("subscription:  ", subscription);
+  
+  const isFreePlan = !subscription;
   const stats = {
     coverLettersGenerated: letters.length,
     lastGenerated: getTimeAgo(letters[0]?.created_at || null),
@@ -101,6 +108,54 @@ export default async function Dashboard() {
       <DashboardNavbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="container mx-auto px-4 py-8 space-y-8">
+          
+          {/* Free Plan Usage Alert */}
+          {isFreePlan && usageResult.success && (
+            <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        Free Plan - {usageResult.remainingCount} letters remaining
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        You've used {usageResult.usageCount} out of 2 free cover letters this month
+                      </p>
+                    </div>
+                  </div>
+                  {usageResult.remainingCount === 0 ? (
+                    <Button asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                      <Link href="/pricing">
+                        <Crown className="h-4 w-4 mr-2" />
+                        Upgrade to Pro
+                      </Link>
+                    </Button>
+                  ) : usageResult.remainingCount === 1 ? (
+                    <Button variant="outline" asChild className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                      <Link href="/pricing">
+                        <Crown className="h-4 w-4 mr-2" />
+                        Upgrade for Unlimited
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+                {usageResult.remainingCount > 0 && (
+                  <div className="mt-3">
+                    <div className="w-full bg-blue-100 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full" 
+                        style={{ width: `${(usageResult.usageCount / 2) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           
           {/* Header Section */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -209,7 +264,10 @@ export default async function Dashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <CoverLetterGenerator />
+                  <CoverLetterGenerator 
+                    userUsage={usageResult}
+                    hasActiveSubscription={!!subscription}
+                  />
                 </CardContent>
               </Card>
             </div>

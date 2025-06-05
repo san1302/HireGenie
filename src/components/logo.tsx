@@ -32,7 +32,7 @@ export default function Logo({
   className = ""
 }: LogoProps) {
   const logoContent = (
-    <div className={`flex items-center space-x-3 group ${className}`}>
+    <div className={`flex items-center space-x-2 group ${className}`}>
       {/* Genie Lamp Logo */}
       <div className="relative flex-shrink-0 flex items-center">
         <Image

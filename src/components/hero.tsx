@@ -5,7 +5,7 @@ import { ArrowRight, Check, FileText, Target, TrendingUp, Users, Clock } from "l
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export default function Hero() {
   const router = useRouter();
@@ -14,12 +14,25 @@ export default function Hero() {
   const [recentActivity, setRecentActivity] = useState(247);
   const supabase = createClient();
 
-  useEffect(() => {
-    const checkAuth = async () => {
+  // Memoize auth check to prevent unnecessary re-renders
+  const checkAuth = useCallback(async () => {
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
-    };
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setIsLoggedIn(false);
+    }
+  }, [supabase.auth]);
+
+  useEffect(() => {
+    // Initial auth check
     checkAuth();
+
+    // Set up real-time auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
 
     // Animate ATS score counter
     const scoreTimer = setInterval(() => {
@@ -34,15 +47,17 @@ export default function Hero() {
       setRecentActivity(prev => prev + Math.floor(Math.random() * 3));
     }, 30000);
 
+    // Cleanup function
     return () => {
       clearInterval(scoreTimer);
       clearInterval(activityTimer);
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [checkAuth, supabase.auth]);
 
-  const handleTryItNow = () => {
+  const handleTryItNow = useCallback(() => {
     if (isLoggedIn === null) {
-      return;
+      return; // Still loading auth state
     }
     
     if (isLoggedIn) {
@@ -50,7 +65,7 @@ export default function Hero() {
     } else {
       router.push('/sign-in?returnTo=/dashboard#generate');
     }
-  };
+  }, [isLoggedIn, router]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600";
@@ -108,9 +123,10 @@ export default function Hero() {
                   size="lg"
                   onClick={handleTryItNow}
                   disabled={isLoggedIn === null}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium disabled:opacity-50"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium disabled:opacity-50 transition-all duration-200"
                 >
-                  {isLoggedIn === null ? 'Loading...' : 'Check Your ATS Score Free'}
+                  {isLoggedIn === null ? 'Loading...' : 
+                   isLoggedIn ? 'Go to Dashboard' : 'Check Your ATS Score Free'}
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </div>
@@ -207,51 +223,45 @@ export default function Hero() {
                           <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                             <div className="h-2 bg-green-500 rounded-full transition-all duration-1000" style={{ width: atsScore >= 30 ? '92%' : '0%' }}></div>
                           </div>
-                          <span className="text-xs font-medium">92%</span>
+                          <span className="text-xs text-gray-600">92%</span>
                         </div>
                       </div>
+                      
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Parseability</span>
+                        <span className="text-xs text-gray-600">Skills Match</span>
                         <div className="flex items-center">
                           <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div className="h-2 bg-green-500 rounded-full transition-all duration-1000 delay-300" style={{ width: atsScore >= 50 ? '89%' : '0%' }}></div>
+                            <div className="h-2 bg-blue-500 rounded-full transition-all duration-1000 delay-300" style={{ width: atsScore >= 50 ? '89%' : '0%' }}></div>
                           </div>
-                          <span className="text-xs font-medium">89%</span>
+                          <span className="text-xs text-gray-600">89%</span>
                         </div>
                       </div>
+                      
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Format Quality</span>
+                        <span className="text-xs text-gray-600">Format Score</span>
                         <div className="flex items-center">
                           <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div className="h-2 bg-yellow-500 rounded-full transition-all duration-1000 delay-500" style={{ width: atsScore >= 70 ? '78%' : '0%' }}></div>
+                            <div className="h-2 bg-purple-500 rounded-full transition-all duration-1000 delay-500" style={{ width: atsScore >= 70 ? '95%' : '0%' }}></div>
                           </div>
-                          <span className="text-xs font-medium">78%</span>
+                          <span className="text-xs text-gray-600">95%</span>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-center mt-3 pt-2 border-t border-green-200">
-                      <TrendingUp className="h-3 w-3 text-blue-600 mr-1" />
-                      <span className="text-xs text-gray-600 font-medium">Beats 94% of other applicants</span>
                     </div>
                   </div>
-
-                  {/* Cover Letter - Made Secondary */}
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm text-gray-600 font-medium">Generated Cover Letter (23s)</div>
-                      <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">✓ Ready</div>
+                  
+                  {/* Cover Letter Preview */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <FileText className="h-4 w-4 text-gray-600 mr-2" />
+                        <div className="text-sm text-gray-700 font-medium">Generated Cover Letter</div>
+                      </div>
+                      <div className="text-xs text-gray-500">Ready in 23s</div>
                     </div>
-                    <div className="text-gray-800">
-                      <p className="font-medium text-sm mb-1">Dear Hiring Manager,</p>
-                      <p className="text-xs leading-relaxed">
-                        I am writing to express my interest in the Senior Software
-                        Engineer position at Acme Inc. With over 5 years of
-                        experience in React and Node.js development...
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2 italic">
-                        [ Tailored to match 92% of job requirements ]
-                      </p>
+                    <div className="text-xs text-gray-600 leading-relaxed">
+                      Dear Hiring Manager,<br/><br/>
+                      I am excited to apply for the Senior Software Engineer position at your company. With my extensive experience in React and Node.js, I am confident I can contribute significantly to your team's success...
+                      <span className="text-blue-600 cursor-pointer hover:underline ml-1">[Read more]</span>
                     </div>
                   </div>
                 </div>

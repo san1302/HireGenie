@@ -304,8 +304,8 @@ export const checkUserSubscription = async (userId: string) => {
     return {
       success: true,
       hasActiveSubscription: !!subscription,
-      subscription: subscription || null,
-      planDetails: planDetails,
+      planDetails,
+      subscription,
     };
   } catch (error) {
     console.error("Error in checkUserSubscription:", error);
@@ -313,6 +313,55 @@ export const checkUserSubscription = async (userId: string) => {
       success: false,
       hasActiveSubscription: false,
       error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+export const checkUserUsage = async (userId: string) => {
+  try {
+    const supabase = await createClient();
+    
+    // Get current month's start and end dates
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    
+    const { data: letters, error } = await supabase
+      .from('cover_letters')
+      .select('id, created_at')
+      .eq('user_id', userId)
+      .gte('created_at', monthStart.toISOString())
+      .lte('created_at', monthEnd.toISOString());
+      
+    if (error) {
+      console.error('Error checking user usage:', error);
+      return { 
+        success: false, 
+        usageCount: 0, 
+        remainingCount: 2, 
+        hasReachedLimit: false,
+        error: error.message 
+      };
+    }
+    
+    const usageCount = letters?.length || 0;
+    const remainingCount = Math.max(0, 2 - usageCount); // Free plan limit is 2 letters per month
+    const hasReachedLimit = usageCount >= 2;
+    
+    return { 
+      success: true,
+      usageCount, 
+      remainingCount,
+      hasReachedLimit 
+    };
+  } catch (error) {
+    console.error('Error in checkUserUsage:', error);
+    return { 
+      success: false,
+      usageCount: 0, 
+      remainingCount: 2,
+      hasReachedLimit: false,
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 };

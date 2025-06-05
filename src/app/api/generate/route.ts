@@ -3,6 +3,7 @@ import { createClient } from "../../../../supabase/server";
 import { parseResumeFromFile, parseResumeFromText, type ResumeParserSuccessResponse } from "../../../lib/resume-parser";
 import { generateCoverLetter } from "../../../lib/openai";
 import { analyzeATSCompatibilityEnhanced } from "../../../lib/ats-analyzer";
+import { checkUserUsage } from "../../actions";
 
 // Rate limiting map: IP -> {count, timestamp}
 type RateLimitEntry = { count: number; timestamp: number };
@@ -11,6 +12,7 @@ const rateLimitMap = new Map<string, RateLimitEntry>();
 // Rate limit configuration
 const RATE_LIMIT = 5; // requests
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
 export async function POST(request: NextRequest) {
   try {
     // Get user IP for rate limiting
@@ -30,6 +32,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    
     // Apply rate limiting for unauthenticated users
     if (!user && rateLimitEntry.count >= RATE_LIMIT) {
       return NextResponse.json(
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest) {
       rateLimitMap.set(ip, rateLimitEntry);
     }
 
-    // Check subscription for authenticated users
+    // Check subscription and usage for authenticated users
     let hasActiveSubscription = false;
     if (user) {
       const { data: subscription } = await supabase
@@ -54,6 +57,28 @@ export async function POST(request: NextRequest) {
         .eq("status", "active")
         .single();
       hasActiveSubscription = !!subscription;
+      
+      // If no active subscription, check free usage limit
+      if (!hasActiveSubscription) {
+        const usageResult = await checkUserUsage(user.id);
+        
+        if (usageResult.success && usageResult.hasReachedLimit) {
+          return NextResponse.json(
+            { 
+              message: "Free plan limit reached. You've used all 2 free cover letters this month. Please upgrade to Pro for unlimited generations.",
+              code: "LIMIT_REACHED",
+              usageCount: usageResult.usageCount,
+              remainingCount: usageResult.remainingCount
+            },
+            { status: 403 },
+          );
+        }
+        
+        if (!usageResult.success) {
+          console.error("Error checking user usage:", usageResult.error);
+          // Don't block generation due to usage check error, but log it
+        }
+      }
     }
 
     // Parse form data

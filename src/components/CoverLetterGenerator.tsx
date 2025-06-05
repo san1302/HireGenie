@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Award,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Crown
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
@@ -54,7 +55,15 @@ interface ATSAnalysis {
   details?: string;
 }
 
-export default function CoverLetterGenerator() {
+interface CoverLetterGeneratorProps {
+  userUsage?: {
+    usageCount: number;
+    hasReachedLimit: boolean;
+  };
+  hasActiveSubscription?: boolean;
+}
+
+export default function CoverLetterGenerator({ userUsage, hasActiveSubscription }: CoverLetterGeneratorProps) {
   const [activeTab, setActiveTab] = useState("upload");
   const [fileName, setFileName] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -70,6 +79,9 @@ export default function CoverLetterGenerator() {
   const [isDragging, setIsDragging] = useState(false);
   const [fileProcessing, setFileProcessing] = useState(false);
   const { toast } = useToast();
+
+  // Check if the generator should be locked
+  const isLocked = !hasActiveSubscription && userUsage?.hasReachedLimit;
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -301,8 +313,40 @@ John Smith`;
           </p>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-5xl mx-auto overflow-hidden">
-          <div className="flex flex-col md:flex-row">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-5xl mx-auto overflow-hidden relative">
+          {/* Locked State Overlay */}
+          {isLocked && (
+            <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 rounded-xl flex items-center justify-center">
+              <div className="text-center p-8 max-w-md mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <Crown className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Upgrade to Continue Generating
+                </h3>
+                <p className="text-gray-600 mb-4 leading-relaxed">
+                  You've used all <span className="font-semibold">{userUsage?.usageCount || 2} free cover letters</span> this month. 
+                  Upgrade to Pro for unlimited generations and premium features.
+                </p>
+                
+                <div className="space-y-3">
+                  <a 
+                    href="/pricing"
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors shadow-lg"
+                  >
+                    <Crown className="h-5 w-5 mr-2" />
+                    Upgrade to Pro
+                  </a>
+                  
+                  <div className="text-xs text-gray-500">
+                    ✨ Unlimited cover letters • Advanced ATS analysis • Priority support
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className={`flex flex-col md:flex-row ${isLocked ? 'opacity-40 pointer-events-none' : ''}`}>
             {/* Left Side - Input */}
             <div className="md:w-1/2 p-6 md:border-r border-gray-200">
               <div className="mb-6">
