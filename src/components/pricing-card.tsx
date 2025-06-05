@@ -46,22 +46,33 @@ export default function PricingCard({
     setIsLoading(true);
 
     try {
+      const checkoutPayload = {
+        productPriceId: priceId,
+        successUrl: `${window.location.origin}/success?redirect=dashboard&plan=${item.name}`,
+        customerEmail: user.email || "",
+        metadata: {
+          user_id: user.id,
+        },
+      };
+
+      console.log("🔍 CHECKOUT DEBUG - User object:", JSON.stringify(user, null, 2));
+      console.log("🔍 CHECKOUT DEBUG - Sending payload:", JSON.stringify(checkoutPayload, null, 2));
+      console.log("🔍 CHECKOUT DEBUG - User ID being sent:", user.id);
+
+      // Temporary debugging alert
+      alert(`DEBUG: Sending user_id: ${user.id} (type: ${typeof user.id})`);
+
       const { data, error } = await supabase.functions.invoke(
         "supabase-functions-create-checkout",
         {
-          body: {
-            productPriceId: priceId,
-            successUrl: `${window.location.origin}/success`,
-            customerEmail: user.email || "",
-            metadata: {
-              user_id: user.id,
-            },
-          },
+          body: checkoutPayload,
           headers: {
             "X-Customer-Email": user.email || "",
           },
         },
       );
+
+      console.log("🔍 CHECKOUT DEBUG - Response:", JSON.stringify({ data, error }, null, 2));
 
       if (error) {
         throw error;
@@ -69,6 +80,7 @@ export default function PricingCard({
 
       // Redirect to Polar checkout
       if (data?.url) {
+        console.log("🔍 CHECKOUT DEBUG - Redirecting to:", data.url);
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned");

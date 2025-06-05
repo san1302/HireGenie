@@ -98,8 +98,19 @@ async function storeWebhookEvent(
 
 // Event handlers
 async function handleSubscriptionCreated(supabaseClient: any, body: any) {
+  // Add detailed logging for debugging
+  console.log("🔍 WEBHOOK DEBUG - Full webhook body:", JSON.stringify(body, null, 2));
+  console.log("🔍 WEBHOOK DEBUG - Event type:", body.type);
+  console.log("🔍 WEBHOOK DEBUG - body.data:", JSON.stringify(body.data, null, 2));
+  console.log("🔍 WEBHOOK DEBUG - body.data.metadata:", JSON.stringify(body.data?.metadata, null, 2));
+  console.log("🔍 WEBHOOK DEBUG - body.data.custom_field_data:", JSON.stringify(body.data?.custom_field_data, null, 2));
+  console.log("🔍 WEBHOOK DEBUG - User ID from metadata:", body.data?.metadata?.user_id);
+  console.log("🔍 WEBHOOK DEBUG - body.data.metadata type:", typeof body.data?.metadata);
+  console.log("🔍 WEBHOOK DEBUG - Is metadata empty?", JSON.stringify(body.data?.metadata) === '{}');
 
   try {
+    console.log("🚀 Processing subscription.created event");
+    
     const { data, error } = await supabaseClient
       .from("subscriptions")
       .insert({
@@ -128,8 +139,11 @@ async function handleSubscriptionCreated(supabaseClient: any, body: any) {
       })
       .select();
 
+    console.log("💾 Database insert result:", { data, error });
+    console.log("💾 Inserted user_id:", data?.[0]?.user_id);
+
     if (error) {
-      console.error('Error inserting subscription:', error);
+      console.error('❌ Error inserting subscription:', error);
       throw error;
     }
 

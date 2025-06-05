@@ -84,10 +84,10 @@ export default async function Dashboard() {
   const { data: subscription } = await supabase
     .from("subscriptions")
     .select("status")
-    .eq("user_id", user.id)
+    .eq("user_id", user.id.toString())
     .eq("status", "active")
     .single();
-
+  console.log("subscription:  ", subscription);
   const stats = {
     coverLettersGenerated: letters.length,
     lastGenerated: getTimeAgo(letters[0]?.created_at || null),

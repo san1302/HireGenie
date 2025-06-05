@@ -18,10 +18,15 @@ export async function SubscriptionCheck({
         redirect('/sign-in');
     }
 
-    const isSubscribed = await checkUserSubscription(user?.id!);
+    const subscriptionResult = await checkUserSubscription(user?.id!);
 
-    if (!isSubscribed) {
+    if (!subscriptionResult.success || !subscriptionResult.hasActiveSubscription) {
         redirect(redirectTo);
+    }
+
+    if (subscriptionResult.planDetails) {
+        console.log('User Plan:', subscriptionResult.planDetails.planName);
+        console.log('Plan Details:', subscriptionResult.planDetails);
     }
 
     return <>{children}</>;

@@ -254,7 +254,7 @@ export const checkUserSubscription = async (userId: string) => {
     const { data: subscription, error } = await supabase
       .from("subscriptions")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", userId.toString())
       .eq("status", "active")
       .single();
 
@@ -267,10 +267,45 @@ export const checkUserSubscription = async (userId: string) => {
       };
     }
 
+    // If we have a subscription, get the plan details
+    let planDetails = null;
+    if (subscription) {
+      try {
+        // Get all plans from Polar
+        const { data: plansResponse, error: plansError } = await supabase.functions.invoke('supabase-functions-get-plans');
+        
+        if (!plansError && plansResponse?.items) {
+          // Find the matching plan by polar_price_id
+          const matchingPlan = plansResponse.items.find((plan: any) => 
+            plan.prices && plan.prices.some((price: any) => price.id === subscription.polar_price_id)
+          );
+          
+          if (matchingPlan) {
+            // Find the specific price within the plan
+            const matchingPrice = matchingPlan.prices.find((price: any) => price.id === subscription.polar_price_id);
+            
+            planDetails = {
+              planId: matchingPlan.id,
+              planName: matchingPlan.name,
+              planDescription: matchingPlan.description,
+              priceId: matchingPrice?.id,
+              priceAmount: matchingPrice?.priceAmount,
+              priceCurrency: matchingPrice?.priceCurrency,
+              interval: subscription.interval,
+            };
+          }
+        }
+      } catch (planError) {
+        console.error("Error fetching plan details:", planError);
+        // Don't fail the subscription check if plan lookup fails
+      }
+    }
+
     return {
       success: true,
       hasActiveSubscription: !!subscription,
       subscription: subscription || null,
+      planDetails: planDetails,
     };
   } catch (error) {
     console.error("Error in checkUserSubscription:", error);
@@ -289,7 +324,7 @@ export const manageSubscriptionAction = async (userId: string) => {
     const { data: subscription, error } = await supabase
       .from("subscriptions")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", userId.toString())
       .eq("status", "active")
       .single();
 

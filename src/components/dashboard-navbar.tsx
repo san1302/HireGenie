@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import Logo from './logo'
 
 export default function DashboardNavbar() {
   const supabase = createClient()
@@ -42,14 +43,7 @@ export default function DashboardNavbar() {
     <nav className="w-full border-b border-gray-200 bg-white/95 backdrop-blur-sm py-4 sticky top-0 z-50">
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center gap-6">
-          <Link href="/" prefetch className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              HireGenie
-            </span>
-          </Link>
+          <Logo size="md" showText={true} href="/" />
           
           <div className="hidden md:flex items-center gap-1">
             <Link href="/dashboard">

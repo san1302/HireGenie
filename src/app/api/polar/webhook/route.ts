@@ -29,15 +29,23 @@ const storeWebhookEvent = async (supabase: any, body: any) => {
 const webhookHandler = async (body: any) => {
     const supabase = await createClient();
 
+    // Add detailed logging for debugging
+    console.log("🔍 WEBHOOK DEBUG - Full body:", JSON.stringify(body, null, 2));
+    console.log("🔍 WEBHOOK DEBUG - Event type:", body.type);
+    console.log("🔍 WEBHOOK DEBUG - Metadata:", JSON.stringify(body.data?.metadata, null, 2));
+    console.log("🔍 WEBHOOK DEBUG - User ID from metadata:", body.data?.metadata?.user_id);
+
     switch (body.type) {
         case 'subscription.created':
+            console.log("🚀 Processing subscription.created event");
+            
             // Insert new subscription
             const { data, error } = await supabase.from("subscriptions").insert({
                 polar_id: body.data.id,
                 polar_price_id: body.data.price_id,
                 currency: body.data.currency,
                 interval: body.data.recurring_interval,
-                user_id: body.data.metadata.userId,
+                user_id: body.data.metadata.user_id,
                 status: body.data.status,
                 current_period_start: new Date(body.data.current_period_start).getTime(),
                 current_period_end: new Date(body.data.current_period_end).getTime(),
@@ -57,8 +65,10 @@ const webhookHandler = async (body: any) => {
                 customer_id: body.data.customer_id
             }).select();
 
+            console.log("💾 Database insert result:", { data, error });
+
             if (error) {
-                console.error('Error inserting subscription:', error);
+                console.error('❌ Error inserting subscription:', error);
                 throw error;
             }
             break;

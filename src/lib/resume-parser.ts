@@ -1,40 +1,11 @@
 // Resume Parser API Service
 // Handles communication with the local resume parser service running on localhost:8000
 
-// TypeScript types for resume sections
-export interface ResumeSection {
-  found: boolean;
-  line_start: number;
-}
-
-export interface ResumeSections {
-  contact?: ResumeSection;
-  experience?: ResumeSection;
-  education?: ResumeSection;
-  skills?: ResumeSection;
-  summary?: ResumeSection;
-}
-
-// TypeScript types for extraction metadata
-export interface ExtractionMetadata {
-  method_used: string;
-  fallback_comparison: boolean;
-  tables_converted: number;
-  pages_processed: number;
-}
-
-// Enhanced TypeScript types for API responses
+// TypeScript types for API responses
 export interface ResumeParserSuccessResponse {
   success: true;
   text: string;
   word_count: number;
-  file_type?: string;
-  // Enhanced ATS-aware fields
-  parsing_confidence?: number;
-  ats_warnings?: string[];
-  sections?: ResumeSections;
-  formatting_issues?: string[];
-  extraction_metadata?: ExtractionMetadata;
 }
 
 export interface ResumeParserErrorResponse {
@@ -51,8 +22,6 @@ export interface ResumeParserError {
   success: false;
   error: string;
   details?: string;
-  parsing_confidence?: number;
-  ats_warnings?: string[];
 }
 
 export type ResumeParserResponse = ResumeParserSuccessResponse | ResumeParserError;
@@ -129,23 +98,14 @@ export async function parseResumeFromFile(file: File): Promise<ResumeParserRespo
       return {
         success: true,
         text: data.text,
-        word_count: data.word_count || 0,
-        file_type: data.file_type,
-        // Enhanced ATS-aware fields
-        parsing_confidence: data.parsing_confidence,
-        ats_warnings: data.ats_warnings || [],
-        sections: data.sections || {},
-        formatting_issues: data.formatting_issues || [],
-        extraction_metadata: data.extraction_metadata
+        word_count: data.word_count || 0
       };
     }
 
     return {
       success: false,
       error: 'Invalid response from resume parser',
-      details: 'Response does not contain expected text field',
-      parsing_confidence: data.parsing_confidence || 0,
-      ats_warnings: data.ats_warnings || []
+      details: 'Response does not contain expected text field'
     };
 
   } catch (error) {
@@ -215,23 +175,14 @@ export async function parseResumeFromText(text: string): Promise<ResumeParserRes
       return {
         success: true,
         text: data.text,
-        word_count: data.word_count || 0,
-        file_type: data.file_type,
-        // Enhanced ATS-aware fields
-        parsing_confidence: data.parsing_confidence,
-        ats_warnings: data.ats_warnings || [],
-        sections: data.sections || {},
-        formatting_issues: data.formatting_issues || [],
-        extraction_metadata: data.extraction_metadata
+        word_count: data.word_count || 0
       };
     }
 
     return {
       success: false,
       error: 'Invalid response from resume parser',
-      details: 'Response does not contain expected text field',
-      parsing_confidence: data.parsing_confidence || 0,
-      ats_warnings: data.ats_warnings || []
+      details: 'Response does not contain expected text field'
     };
 
   } catch (error) {

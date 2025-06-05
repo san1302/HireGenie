@@ -3,6 +3,7 @@ import { createClient } from "../../supabase/server";
 import { Button } from "./ui/button";
 import UserProfile from "./user-profile";
 import MobileMenu from "./mobile-menu";
+import Logo from "./logo";
 
 export default async function Navbar() {
   const supabase = createClient();
@@ -16,18 +17,7 @@ export default async function Navbar() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link
-            href="/"
-            prefetch
-            className="flex items-center space-x-2 group"
-          >
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
-              <span className="text-white font-bold text-sm">H</span>
-            </div>
-            <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 group-hover:from-blue-700 group-hover:to-purple-700 transition-all duration-200">
-              HireGenie.io
-            </span>
-          </Link>
+          <Logo size="md" showText={true} href="/" />
 
           {/* Navigation Items */}
           <div className="hidden md:flex items-center space-x-8">
