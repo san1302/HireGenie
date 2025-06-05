@@ -98,7 +98,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
           How it Works
         </Link>
         <Link 
-          href="/pricing" 
+          href="#pricing" 
           className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
           onClick={() => setIsOpen(false)}
         >

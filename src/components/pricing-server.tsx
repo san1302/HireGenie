@@ -10,85 +10,164 @@ export default async function PricingServer() {
     const { data: plans, error } = await supabase.functions.invoke('supabase-functions-get-plans');
     const result = plans?.items;
     console.log("plans", result);
+    
     if (error) {
         console.error("Error fetching plans:", error);
         return (
-            <div className="py-12 bg-gray-50">
+            <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900">Live Pricing</h2>
-                        <p className="text-gray-600 mt-2">Unable to load pricing plans at this time</p>
+                    <div className="text-center">
+                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-red-100 text-red-600 text-sm font-medium mb-8">
+                            ⚠️ Unable to Load Plans
+                        </div>
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Pricing</h2>
+                        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                            We're experiencing technical difficulties. Please try refreshing the page.
+                        </p>
                     </div>
                 </div>
-            </div>
+            </section>
         );
     }
 
+    // Sort plans to put Pro first, then others
+    const sortedPlans = result ? [...result].sort((a, b) => {
+        if (a.name === "Pro") return -1; // Pro comes first
+        if (b.name === "Pro") return 1;  // Pro comes first
+        return a.name.localeCompare(b.name); // Alphabetical for others
+    }) : [];
+
     return (
-        <div className="py-16 bg-gray-50 border-t border-gray-100">
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-12">
-                    <span className="bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full font-medium">Live Pricing</span>
-                    <h2 className="text-3xl font-bold text-gray-900 mt-4">Our Current Plans</h2>
-                    <p className="text-gray-600 mt-2 max-w-2xl mx-auto">
-                        These are our actual subscription plans with direct checkout
+        <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+            <div className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 blur-3xl xl:-top-6" aria-hidden="true">
+                <div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30" 
+                     style={{clipPath: "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"}}></div>
+            </div>
+
+            <div className="container mx-auto px-4 relative">
+                <div className="text-center mb-16">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 text-sm font-medium mb-8">
+                        🚀 Live Pricing
+                    </div>
+                    <h2 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-6">
+                        Choose Your Plan
+                    </h2>
+                    <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                        Get started with our free plan or upgrade to unlock unlimited cover letters and premium features
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 p-8 flex flex-col h-full transform hover:-translate-y-1 transition-transform">
-                        <div className="mb-8">
-                            <h3 className="text-xl font-bold text-gray-900 mb-3">Free</h3>
-                            <div className="flex items-baseline mb-2">
-                                <span className="text-4xl font-bold">$0</span>
-                                <span className="text-gray-500 ml-1">/forever</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-stretch">
+                    {/* Free Plan - Always first */}
+                    <div className="group relative">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-200 to-slate-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                        <div className="relative bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1 border border-gray-200 h-full flex flex-col">
+                            {/* Subtle background overlay for Free */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-slate-50 opacity-30 rounded-3xl"></div>
+                            
+                            <div className="relative z-10 flex flex-col h-full">
+                                {/* Header section - fixed height */}
+                                <div className="mb-8">
+                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Free</h3>
+                                    <div className="flex items-baseline mb-4">
+                                        <span className="text-5xl font-bold text-gray-900">$0</span>
+                                        <span className="text-gray-500 ml-2 text-lg">/forever</span>
+                                    </div>
+                                    <p className="text-gray-600 h-12 flex items-center">Perfect for occasional job seekers</p>
+                                </div>
+                                
+                                {/* Features section - flexible height */}
+                                <div className="border-t border-gray-100 pt-8 mb-8 flex-1">
+                                    <ul className="space-y-4">
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                                <span className="font-semibold">2 cover letters</span> per month
+                                            </span>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                                <span className="font-semibold">Basic templates</span>
+                                            </span>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                                <span className="font-semibold">Standard</span> export options
+                                            </span>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                                <span className="font-semibold">Community</span> support
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                {/* Button section - fixed at bottom */}
+                                <div className="mt-auto">
+                                    <Button 
+                                        asChild 
+                                        size="lg"
+                                        className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border-0 font-semibold py-6 text-lg transition-all duration-200"
+                                    >
+                                        <Link href="/sign-up">Get Started Free</Link>
+                                    </Button>
+                                </div>
                             </div>
-                            <p className="text-gray-500 text-sm">Perfect for occasional job seekers</p>
                         </div>
-                        
-                        <div className="border-t border-gray-100 pt-6 mb-6">
-                            <ul className="space-y-4 mb-8 flex-1">
-                                <li className="flex items-start gap-3">
-                                    <Check className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                    <span className="text-gray-600">
-                                        <span className="font-medium">2 cover letters</span> per month
-                                    </span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <Check className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                    <span className="text-gray-600">
-                                        <span className="font-medium">Basic templates</span>
-                                    </span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <Check className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                    <span className="text-gray-600">
-                                        <span className="font-medium">Standard</span> export options
-                                    </span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <Check className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                    <span className="text-gray-600">
-                                        <span className="font-medium">Community</span> support
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                        
-                        <Button 
-                            asChild 
-                            variant="outline"
-                            className="w-full bg-white hover:bg-gray-50 border-gray-200 text-gray-800"
-                        >
-                            <Link href="/sign-up">Get Started Free</Link>
-                        </Button>
                     </div>
 
-                    {result?.map((item: any) => (
-                        <PricingCard key={item.id} item={item} user={user} />
-                    ))}
+                    {/* Dynamic Plans from Polar - Pro will be first due to sorting */}
+                    {sortedPlans?.map((item: any, index: number) => {
+                        const isPopular = item.name === "Pro";
+                        return (
+                            <div key={item.id} className="group relative">
+                                {isPopular && (
+                                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+                                            Most Popular
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-200 to-purple-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                                <div className="relative">
+                                    <PricingCard item={item} user={user} />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Enterprise Section */}
+                <div className="mt-20 text-center">
+                    <div className="bg-gradient-to-r from-gray-900 to-blue-900 rounded-3xl p-12 shadow-2xl">
+                        <h3 className="text-3xl font-bold text-white mb-4">Need something custom?</h3>
+                        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                            Looking for enterprise features, custom integrations, or volume pricing? Let's talk.
+                        </p>
+                        <Button 
+                            asChild
+                            size="lg"
+                            className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-6 text-lg"
+                        >
+                            <Link href="mailto:contact@hiregenie.io">Contact Sales</Link>
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
     );
 } 

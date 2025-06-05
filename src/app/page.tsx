@@ -7,7 +7,6 @@ import Features from "@/components/features";
 import HowItWorks from "@/components/how-it-works";
 import ComingSoon from "@/components/coming-soon";
 import WaitlistForm from "@/components/waitlist-form";
-import Pricing from "@/components/pricing";
 import PricingServer from "@/components/pricing-server";
 
 export default async function Home() {
@@ -28,8 +27,6 @@ export default async function Home() {
       {/* Coming Soon */}
       <ComingSoon />
       {/* Pricing Section */}
-      <Pricing />
-      {/* Live Pricing Section */}
       <PricingServer />
       {/* Waitlist Form */}
       <WaitlistForm />

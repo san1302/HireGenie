@@ -34,7 +34,7 @@ export default async function Navbar() {
               How it Works
             </Link>
             <Link
-              href="/pricing"
+              href="#pricing"
               className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors duration-200"
             >
               Pricing

@@ -85,7 +85,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/pricing"
+                  href="#pricing"
                   className="text-gray-400 hover:text-white transition-colors flex items-center group"
                 >
                   <span>Pricing</span>
@@ -130,7 +130,7 @@ export default function Footer() {
             <Link href="/" className="hover:text-gray-300 transition-colors">
               Home
             </Link>
-            <Link href="/pricing" className="hover:text-gray-300 transition-colors">
+            <Link href="#pricing" className="hover:text-gray-300 transition-colors">
               Pricing
             </Link>
             <Link href="/dashboard" className="hover:text-gray-300 transition-colors">
