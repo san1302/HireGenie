@@ -1,11 +1,21 @@
-// Resume Parser API Service
-// Handles communication with the local resume parser service running on localhost:8000
+/**
+ * Resume Parser Service Integration
+ * Connects to the Python-based resume parser service
+ */
 
 // TypeScript types for API responses
 export interface ResumeParserSuccessResponse {
   success: true;
   text: string;
   word_count: number;
+  extractedData?: {
+    email?: string;
+    phone?: string;
+    name?: string;
+    skills?: string[];
+    experience?: string[];
+    education?: string[];
+  };
 }
 
 export interface ResumeParserErrorResponse {
@@ -27,8 +37,9 @@ export interface ResumeParserError {
 export type ResumeParserResponse = ResumeParserSuccessResponse | ResumeParserError;
 
 // Configuration
-const RESUME_PARSER_BASE_URL = 'http://localhost:8000';
+const RESUME_PARSER_URL = process.env.RESUME_PARSER_URL || 'http://localhost:8000';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+const SUPPORTED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
 /**
  * Parse resume from uploaded file
@@ -67,7 +78,7 @@ export async function parseResumeFromFile(file: File): Promise<ResumeParserRespo
     formData.append('max_size', MAX_FILE_SIZE.toString());
 
     // Make API call
-    const response = await fetch(`${RESUME_PARSER_BASE_URL}/parse/file`, {
+    const response = await fetch(`${RESUME_PARSER_URL}/parse/file`, {
       method: 'POST',
       body: formData,
     });
@@ -141,7 +152,7 @@ export async function parseResumeFromText(text: string): Promise<ResumeParserRes
     }
 
     // Make API call
-    const response = await fetch(`${RESUME_PARSER_BASE_URL}/parse/text`, {
+    const response = await fetch(`${RESUME_PARSER_URL}/parse/text`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -209,7 +220,7 @@ export async function parseResumeFromText(text: string): Promise<ResumeParserRes
  */
 export async function checkResumeParserHealth(): Promise<boolean> {
   try {
-    const response = await fetch(`${RESUME_PARSER_BASE_URL}/`, {
+    const response = await fetch(`${RESUME_PARSER_URL}/`, {
       method: 'GET',
       signal: AbortSignal.timeout(5000), // 5 second timeout
     });

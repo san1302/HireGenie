@@ -3,7 +3,7 @@ import { Polar } from "@polar-sh/sdk";
 // Initialize Polar client
 export const getPolarClient = () => {
   return new Polar({
-    server: "sandbox",
+    server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
     accessToken: process.env.POLAR_ACCESS_TOKEN,
   });
 };
