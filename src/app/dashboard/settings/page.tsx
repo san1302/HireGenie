@@ -35,7 +35,7 @@ export default async function SettingsPage() {
     .select("*")
     .eq("user_id", user.id)
     .eq("status", "active")
-    .single();
+    .maybeSingle();
 
   return (
     <SubscriptionCheck>

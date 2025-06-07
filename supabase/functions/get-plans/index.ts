@@ -3,7 +3,7 @@ import { Polar } from "npm:@polar-sh/sdk";
 
 const polar = new Polar({
     accessToken: Deno.env.get('POLAR_ACCESS_TOKEN'),
-    server: "sandbox",
+    server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
 });
 
 

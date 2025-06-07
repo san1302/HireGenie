@@ -256,7 +256,7 @@ export const checkUserSubscription = async (userId: string) => {
       .select("*")
       .eq("user_id", userId.toString())
       .eq("status", "active")
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error checking subscription status:", error);
@@ -264,6 +264,16 @@ export const checkUserSubscription = async (userId: string) => {
         success: false,
         hasActiveSubscription: false,
         error: error.message,
+      };
+    }
+
+    // If no subscription found, return free user status
+    if (!subscription) {
+      return {
+        success: true,
+        hasActiveSubscription: false,
+        subscription: null,
+        planDetails: null
       };
     }
 
@@ -375,10 +385,14 @@ export const manageSubscriptionAction = async (userId: string) => {
       .select("*")
       .eq("user_id", userId.toString())
       .eq("status", "active")
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error checking subscription status:", error);
+      return { success: false, error: "Database error checking subscription" };
+    }
+
+    if (!subscription) {
       return { success: false, error: "No active subscription found" };
     }
 
@@ -387,7 +401,7 @@ export const manageSubscriptionAction = async (userId: string) => {
     }
 
     const polar = new Polar({
-      server: "sandbox",
+      server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
       accessToken: process.env.POLAR_ACCESS_TOKEN,
     });
 

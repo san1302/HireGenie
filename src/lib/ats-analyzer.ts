@@ -162,93 +162,22 @@ function analyzeParseability(resumeParserData?: ResumeParserSuccessResponse): {
   const recommendations: ATSRecommendation[] = [];
   let criticalFailures = false;
 
+  // If no parser data provided, assume basic text processing
   if (!resumeParserData) {
     return {
-      score: 50,
-      issues: ['Resume parser data not available'],
+      score: 85, // Assume reasonable parseability for text input
+      issues: ['No advanced parsing data available'],
       criticalFailures: false,
       recommendations: [{
-        priority: 'MEDIUM',
-        issue: 'Unable to analyze parsing quality',
-        fix: 'Ensure resume is in a standard format (PDF, DOC, DOCX)',
-        impact: 'May have parsing issues in some ATS systems'
+        priority: 'LOW',
+        issue: 'No detailed parsing analysis available',
+        fix: 'Consider using file upload for more detailed ATS analysis',
+        impact: 'Basic analysis only - some formatting issues may not be detected'
       }]
     };
   }
 
-  // Critical parsing failures that cause immediate rejection
-  if (resumeParserData.parsing_confidence && resumeParserData.parsing_confidence < 20) {
-    criticalFailures = true;
-    score = 10;
-    issues.push('CRITICAL: Resume format cannot be parsed by ATS');
-    recommendations.push({
-      priority: 'CRITICAL',
-      issue: 'Resume format prevents ATS parsing',
-      fix: 'Convert to simple single-column format with standard fonts',
-      impact: 'Currently being auto-rejected by ATS'
-    });
-  }
-
-  // Check for specific formatting issues
-  if (resumeParserData.formatting_issues) {
-    resumeParserData.formatting_issues.forEach(issue => {
-      switch (issue) {
-        case 'multi_column':
-          score -= 40;
-          issues.push('Multi-column layout will scramble content in most ATS');
-          recommendations.push({
-            priority: 'HIGH',
-            issue: 'Multi-column layout detected',
-            fix: 'Convert to single-column format',
-            impact: 'Content may be scrambled or misread by ATS'
-          });
-          if (score < 30) criticalFailures = true;
-          break;
-        case 'tables':
-          score -= 30;
-          issues.push('Tables are often parsed incorrectly, mixing data');
-          recommendations.push({
-            priority: 'HIGH',
-            issue: 'Tables detected in resume',
-            fix: 'Replace tables with simple text formatting',
-            impact: 'Table data may be scrambled or lost'
-          });
-          break;
-        case 'graphics':
-          score -= 20;
-          issues.push('Graphics/images are completely ignored by ATS');
-          recommendations.push({
-            priority: 'MEDIUM',
-            issue: 'Graphics or images detected',
-            fix: 'Remove images and use text-based formatting',
-            impact: 'Visual elements will be ignored by ATS'
-          });
-          break;
-        case 'header':
-          score -= 25;
-          issues.push('Headers/footers may not be parsed, losing contact info');
-          recommendations.push({
-            priority: 'HIGH',
-            issue: 'Header/footer content detected',
-            fix: 'Move contact information to main document body',
-            impact: 'Contact information may be lost'
-          });
-          break;
-        case 'special_chars':
-          score -= 15;
-          issues.push('Special characters may break parsing');
-          recommendations.push({
-            priority: 'MEDIUM',
-            issue: 'Special characters detected',
-            fix: 'Use standard characters and avoid symbols',
-            impact: 'May cause parsing errors in some ATS'
-          });
-          break;
-      }
-    });
-  }
-
-  // Text density check (too little text = likely parsing failure)
+  // Basic text content validation
   const wordCount = resumeParserData.word_count || 0;
   if (wordCount < 150) {
     score -= 50;
@@ -262,17 +191,16 @@ function analyzeParseability(resumeParserData?: ResumeParserSuccessResponse): {
     if (wordCount < 100) criticalFailures = true;
   }
 
-  // ATS warnings from parser
-  if (resumeParserData.ats_warnings && resumeParserData.ats_warnings.length > 0) {
-    resumeParserData.ats_warnings.forEach(warning => {
-      score -= 10;
-      issues.push(warning);
-      recommendations.push({
-        priority: 'MEDIUM',
-        issue: warning,
-        fix: 'Address the specific formatting issue mentioned',
-        impact: 'May reduce ATS compatibility'
-      });
+  // Check if basic parsing was successful
+  if (!resumeParserData.text || resumeParserData.text.trim().length === 0) {
+    criticalFailures = true;
+    score = 10;
+    issues.push('CRITICAL: Resume could not be parsed');
+    recommendations.push({
+      priority: 'CRITICAL',
+      issue: 'Resume format prevents parsing',
+      fix: 'Convert to simple single-column format with standard fonts (PDF, DOCX)',
+      impact: 'Currently being auto-rejected by ATS'
     });
   }
 

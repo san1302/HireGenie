@@ -48,23 +48,24 @@ export default function DashboardNavbar() {
       
       const { data: subscription, error } = await supabase
         .from("subscriptions")
-        .select("status, plan_name")
+        .select("status")
         .eq("user_id", userId)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       console.log('Subscription query result:', { subscription, error }); // Debug log
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+      if (error) {
         console.error('Error checking subscription:', error);
+        return { hasActiveSubscription: false };
       }
 
       return {
         hasActiveSubscription: !!subscription,
-        planDetails: subscription ? { planName: subscription.plan_name || "Pro" } : undefined
+        planDetails: subscription ? { planName: "Pro" } : { planName: "Free" }
       };
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error('Unexpected error in subscription check:', error);
       return { hasActiveSubscription: false };
     }
   }, [supabase]);

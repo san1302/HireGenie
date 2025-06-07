@@ -91,7 +91,7 @@ export default async function Dashboard() {
     .select("status")
     .eq("user_id", user.id.toString())
     .eq("status", "active")
-    .single();
+    .maybeSingle();
   console.log("subscription:  ", subscription);
   
   const isFreePlan = !subscription;
