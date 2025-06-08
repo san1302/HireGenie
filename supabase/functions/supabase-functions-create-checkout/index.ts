@@ -40,6 +40,7 @@ serve(async (req) => {
       products: [productPriceId],
       customer_email: customerEmail,
       success_url: successUrl,
+      embed_origin: new URL(successUrl).origin,
       metadata: metadata,
     });
 
