@@ -3,9 +3,9 @@ import { Polar } from "npm:@polar-sh/sdk";
 
 const polar = new Polar({
     accessToken: Deno.env.get('POLAR_ACCESS_TOKEN'),
-    server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+    server: Deno.env.get('ENVIRONMENT') === 'production' ? 'production' : 'sandbox',
 });
-
+console.log("Environment:", Deno.env.get('ENVIRONMENT'));
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',

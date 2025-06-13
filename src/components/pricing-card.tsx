@@ -45,7 +45,7 @@ export default function PricingCard({
     try {
       const checkoutPayload = {
         productPriceId: priceId,
-        successUrl: `${window.location.origin}/success?redirect=dashboard&plan=${item.name}`,
+        successUrl: `${window.location.origin}/dashboard`,
         customerEmail: user.email || "",
         metadata: {
           user_id: user.id,
@@ -74,7 +74,7 @@ export default function PricingCard({
       if (error) {
         throw error;
       }
-
+      console.log("🔍 CHECKOUT DEBUG - Data:", data);
       // Redirect to Polar checkout
       if (data?.url) {
         console.log("🔍 CHECKOUT DEBUG - Redirecting to:", data.url);

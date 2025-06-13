@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const polar = new Polar({
   accessToken: Deno.env.get('POLAR_ACCESS_TOKEN'),
-  server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+  server: Deno.env.get('ENVIRONMENT') === 'production' ? 'production' : 'sandbox',
 });
 
 serve(async (req) => {
@@ -27,22 +27,18 @@ serve(async (req) => {
 
     console.log("🔍 CREATE-CHECKOUT DEBUG - Metadata being sent to Polar:", JSON.stringify(metadata, null, 2));
 
+    // Use the standard checkout API with correct structure
     const checkoutPayload = {
-      productPriceId,
-      successUrl,
-      customerEmail,
-      metadata,
+      products: [productPriceId], // This is actually the product ID based on your logs
+      customer_email: customerEmail,
+      success_url: successUrl, // Simple success URL without checkout_id
+      metadata: metadata,
     };
 
     console.log("🔍 CREATE-CHECKOUT DEBUG - Full checkout payload:", JSON.stringify(checkoutPayload, null, 2));
 
-    const result = await polar.checkouts.create({
-      products: [productPriceId],
-      customer_email: customerEmail,
-      success_url: successUrl,
-      embed_origin: new URL(successUrl).origin,
-      metadata: metadata,
-    });
+    // Use the standard checkout API
+    const result = await polar.checkouts.create(checkoutPayload);
 
     console.log("🔍 CREATE-CHECKOUT DEBUG - Polar response:", JSON.stringify(result, null, 2));
 
@@ -74,4 +70,4 @@ serve(async (req) => {
       }
     );
   }
-}); 
+});
