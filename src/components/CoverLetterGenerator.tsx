@@ -20,7 +20,8 @@ import {
   Crown,
   MessageCircle,
   AlignLeft,
-  File
+  File,
+  Edit
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
@@ -76,6 +77,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [length, setLength] = useState("Standard");
   const [outputFormat, setOutputFormat] = useState("txt");
   const [coverLetter, setCoverLetter] = useState("");
+  const [editableCoverLetter, setEditableCoverLetter] = useState("");
+  const [hasBeenEdited, setHasBeenEdited] = useState(false);
   const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
   const [showATSDetails, setShowATSDetails] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -226,6 +229,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
 
       const data = await response.json();
       setCoverLetter(data.coverLetter || sampleCoverLetter);
+      setEditableCoverLetter(data.coverLetter || sampleCoverLetter);
+      setHasBeenEdited(false);
       
       // Set ATS analysis data
       if (data.atsAnalysis) {
@@ -246,7 +251,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(coverLetter);
+      const contentToCopy = editableCoverLetter || coverLetter;
+      await navigator.clipboard.writeText(contentToCopy);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
       toast({
@@ -261,13 +267,14 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const handleDownload = () => {
     const timestamp = new Date().toISOString().split('T')[0];
     const baseFilename = `cover-letter-${timestamp}`;
+    const contentToDownload = editableCoverLetter || coverLetter;
     
     if (outputFormat === 'pdf') {
       // Create PDF
       const element = document.createElement('div');
       element.innerHTML = `
         <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 40px;">
-          <div style="white-space: pre-wrap;">${coverLetter}</div>
+          <div style="white-space: pre-wrap;">${contentToDownload}</div>
         </div>
       `;
       
@@ -289,7 +296,7 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
               </style>
             </head>
             <body>
-              <div class="content">${coverLetter}</div>
+              <div class="content">${contentToDownload}</div>
               <div class="no-print" style="margin-top: 20px; text-align: center;">
                 <button onclick="window.print()" style="padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 5px; cursor: pointer;">
                   Save as PDF
@@ -305,7 +312,7 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
       }
     } else if (outputFormat === 'docx') {
       // Create a simplified DOCX-like format using RTF
-      const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}\\f0\\fs24 ${coverLetter.replace(/\n/g, '\\par ')}}`;
+      const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}\\f0\\fs24 ${contentToDownload.replace(/\n/g, '\\par ')}}`;
       const blob = new Blob([rtfContent], { type: 'application/rtf' });
       const element = document.createElement("a");
       element.href = URL.createObjectURL(blob);
@@ -326,7 +333,7 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     </style>
 </head>
 <body>
-    <div class="letter-content">${coverLetter}</div>
+    <div class="letter-content">${contentToDownload}</div>
 </body>
 </html>
       `;
@@ -340,7 +347,7 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     } else {
       // Default TXT format
       const element = document.createElement("a");
-      const file = new Blob([coverLetter], { type: "text/plain" });
+      const file = new Blob([contentToDownload], { type: "text/plain" });
       element.href = URL.createObjectURL(file);
       element.download = `${baseFilename}.txt`;
       document.body.appendChild(element);
@@ -351,6 +358,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
 
   const handleReset = () => {
     setCoverLetter("");
+    setEditableCoverLetter("");
+    setHasBeenEdited(false);
     setAtsAnalysis(null);
     setResumeFile(null);
     setFileName("");
@@ -389,6 +398,39 @@ I would welcome the opportunity to discuss how my background, skills, and experi
 
 Sincerely,
 John Smith`;
+
+  // Calculate word count
+  const getWordCount = (text: string): number => {
+    if (!text.trim()) return 0;
+    return text.trim().split(/\s+/).length;
+  };
+
+  // Handle cover letter editing
+  const handleCoverLetterEdit = (newContent: string) => {
+    setEditableCoverLetter(newContent);
+    
+    // Track if content has been modified from original
+    if (newContent !== coverLetter) {
+      setHasBeenEdited(true);
+    } else {
+      setHasBeenEdited(false);
+    }
+  };
+
+  // Get word count for display
+  const wordCount = getWordCount(editableCoverLetter);
+  
+  // Get length status
+  const getLengthStatus = (count: number) => {
+    if (count < 150) return { message: "Too short", color: "text-red-500" };
+    if (count <= 250) return { message: "Concise", color: "text-green-500" };
+    if (count <= 350) return { message: "Standard", color: "text-blue-500" };
+    if (count <= 450) return { message: "Detailed", color: "text-indigo-500" };
+    if (count > 450) return { message: "Comprehensive", color: "text-purple-500" };
+    return { message: "Good length", color: "text-gray-500" };
+  };
+
+  const lengthStatus = getLengthStatus(wordCount);
 
   return (
     <section id="cover-letter-tool" className="py-16">
@@ -650,15 +692,34 @@ John Smith`;
             
             {/* Right Side - Output */}
             <div className="md:w-2/3 p-6 bg-gray-50">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Your Cover Letter
-              </h3>
-              
               {coverLetter && !isGenerating ? (
                 <>
-                  <div className="bg-white border border-gray-200 rounded-lg p-5 h-[400px] overflow-y-auto cover-letter-content">
-                    <div className="whitespace-pre-wrap text-gray-700">{coverLetter}</div>
+                  {/* Header with word count and edit status */}
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-lg font-medium text-gray-900">Your Cover Letter</h3>
+                      {hasBeenEdited && (
+                        <div className="flex items-center px-2 py-1 bg-orange-50 text-orange-600 text-xs rounded-full border border-orange-200">
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edited
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center space-x-2">
+                      <span>{wordCount} words</span>
+                      <span className={lengthStatus.color}>• {lengthStatus.message}</span>
+                    </div>
                   </div>
+                  
+                  {/* Editable textarea */}
+                  <textarea
+                    value={editableCoverLetter}
+                    onChange={(e) => handleCoverLetterEdit(e.target.value)}
+                    className="w-full h-[400px] p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="Your generated cover letter will appear here for editing..."
+                    style={{ fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}
+                  />
+                  
                   <div className="mt-4 flex justify-between items-center">
                     <button 
                       className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
