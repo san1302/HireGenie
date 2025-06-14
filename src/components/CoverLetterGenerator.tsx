@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Upload, 
   FileText, 
@@ -98,11 +98,17 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
   const [showATSDetails, setShowATSDetails] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState<'analyzing' | 'generating' | 'optimizing' | 'complete'>('analyzing');
+  const [isTextAreaExpanded, setIsTextAreaExpanded] = useState(false);
+  const [isTextAreaAutoHeight, setIsTextAreaAutoHeight] = useState(false);
   const [error, setError] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [fileProcessing, setFileProcessing] = useState(false);
   const { toast } = useToast();
+  
+  // Ref for smooth scrolling to improvement section
+  const improvementSectionRef = useRef<HTMLDivElement>(null);
 
   // Check if the generator should be locked
   const isLocked = !hasActiveSubscription && userUsage?.hasReachedLimit;
@@ -214,6 +220,9 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const handleGenerate = async () => {
     if (!validateForm()) return;
     setIsGenerating(true);
+    setGenerationStep('analyzing');
+    setIsTextAreaExpanded(false);
+    setIsTextAreaAutoHeight(false);
     setError("");
     setFileProcessing(true);
     setAtsAnalysis(null); // Reset ATS analysis
@@ -231,6 +240,10 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
       formData.append("tone", tone);
       formData.append("length", length);
       formData.append("output_format", outputFormat);
+
+      // Simulate step progression
+      setTimeout(() => setGenerationStep('generating'), 1000);
+      setTimeout(() => setGenerationStep('optimizing'), 3000);
 
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -260,6 +273,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
       if (data.atsAnalysis) {
         setAtsAnalysis(data.atsAnalysis);
       }
+      
+      setGenerationStep('complete');
       
       toast({
         title: "Analysis complete!",
@@ -398,6 +413,9 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     setLength("Standard");
     setOutputFormat("txt");
     setShowATSDetails(false);
+    setIsTextAreaExpanded(false);
+    setIsTextAreaAutoHeight(false);
+    setGenerationStep('analyzing');
     
     // Clear localStorage
     localStorage.removeItem('coverLetterDraft');
@@ -661,6 +679,14 @@ John Smith`;
     setSelectionEnd(section.end);
     setShowImprovementOptions(true);
     
+    // Smooth scroll to improvement section
+    setTimeout(() => {
+      improvementSectionRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }, 100);
+    
     // Automatically trigger improvement
     await improveText(improvementType);
   };
@@ -726,6 +752,23 @@ John Smith`;
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
+
+  // Calculate auto height for textarea
+  const calculateTextAreaHeight = () => {
+    if (!editableCoverLetter) return 400; // Default height
+    
+    // Estimate height based on content
+    const lines = editableCoverLetter.split('\n').length;
+    const estimatedLines = Math.max(lines, editableCoverLetter.length / 80); // ~80 chars per line
+    const lineHeight = 24; // Approximate line height in pixels
+    const padding = 32; // Top and bottom padding
+    const minHeight = 400;
+    const calculatedHeight = (estimatedLines * lineHeight) + padding;
+    
+    return Math.max(minHeight, Math.min(calculatedHeight, 800)); // Max height of 800px
+  };
+
+  const textAreaHeight = isTextAreaAutoHeight ? calculateTextAreaHeight() : 400;
 
   return (
     <section id="cover-letter-tool" className="py-16">
@@ -848,7 +891,7 @@ John Smith`;
           
           <div className={`flex flex-col md:flex-row ${isLocked ? 'opacity-40 pointer-events-none' : ''}`}>
             {/* Left Side - Input */}
-            <div className="md:w-1/3 p-6 md:border-r border-gray-200">
+            <div className={`${isTextAreaExpanded && coverLetter ? 'hidden md:block md:w-1/4' : 'md:w-1/3'} p-6 md:border-r border-gray-200`}>
               <div className="mb-6">
                 <div className="flex space-x-4 border-b border-gray-200">
                   <button 
@@ -1059,7 +1102,7 @@ John Smith`;
             </div>
             
             {/* Right Side - Output */}
-            <div className="md:w-2/3 p-6 bg-gray-50">
+            <div className={`${isTextAreaExpanded && coverLetter ? 'md:w-3/4' : 'md:w-2/3'} p-6 bg-gray-50`}>
               {coverLetter && !isGenerating ? (
                 <>
                   {/* Header with word count and edit status */}
@@ -1080,6 +1123,25 @@ John Smith`;
                       )}
                     </div>
                     <div className="flex items-center space-x-4">
+                      {/* Expand/Collapse Button */}
+                      <button
+                        onClick={() => setIsTextAreaExpanded(!isTextAreaExpanded)}
+                        className="flex items-center px-2 py-1 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded border border-indigo-200"
+                        title={isTextAreaExpanded ? "Collapse to normal view" : "Expand to full width"}
+                      >
+                        {isTextAreaExpanded ? (
+                          <>
+                            <ChevronUp className="h-3 w-3 mr-1" />
+                            Collapse
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3 mr-1" />
+                            Expand
+                          </>
+                        )}
+                      </button>
+                      
                       {/* Undo/Redo Controls */}
                       <div className="flex items-center space-x-1">
                         <button
@@ -1174,19 +1236,37 @@ John Smith`;
                   )}
                   
                   {/* Editable textarea */}
-                  <textarea
-                    value={editableCoverLetter}
-                    onChange={(e) => handleCoverLetterEdit(e.target.value)}
-                    onSelect={handleTextSelection}
-                    className="w-full h-[400px] p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    placeholder="Your generated cover letter will appear here for editing..."
-                    style={{ 
-                      fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                      whiteSpace: 'pre-wrap',
-                      wordWrap: 'break-word'
-                    }}
-                    spellCheck={true}
-                  />
+                  <div className="relative">
+                    <textarea
+                      value={editableCoverLetter}
+                      onChange={(e) => handleCoverLetterEdit(e.target.value)}
+                      onSelect={handleTextSelection}
+                      className="w-full p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      placeholder="Your generated cover letter will appear here for editing..."
+                      style={{ 
+                        height: `${textAreaHeight}px`,
+                        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                        whiteSpace: 'pre-wrap',
+                        wordWrap: 'break-word'
+                      }}
+                      spellCheck={true}
+                    />
+                    
+                    {/* Resize Handle */}
+                    <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+                      <button
+                        onClick={() => setIsTextAreaAutoHeight(!isTextAreaAutoHeight)}
+                        className="bg-white border border-gray-200 rounded-t-lg px-3 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"
+                        title={isTextAreaAutoHeight ? "Use fixed height" : "Auto-resize to fit content"}
+                      >
+                        {isTextAreaAutoHeight ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                   
                   {/* Helper text */}
                   <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
@@ -1202,7 +1282,7 @@ John Smith`;
 
                   {/* AI Improvement Options Panel */}
                   {showImprovementOptions && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                    <div ref={improvementSectionRef} className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
                       <div className="flex items-center mb-3">
                         <Sparkles className="h-4 w-4 text-indigo-600 mr-2" />
                         <h4 className="text-sm font-medium text-indigo-900">
@@ -1310,113 +1390,229 @@ John Smith`;
                 </>
               ) : (
                 <div className="space-y-6">
-                  {/* Cover Letter Placeholder */}
-                  <div className="bg-white border border-gray-200 border-dashed rounded-lg p-8 h-[400px] flex flex-col items-center justify-center text-center">
-                    <FileText className="h-12 w-12 text-gray-300 mb-4" />
+                  {/* Clean Cover Letter Placeholder */}
+                  <div className="bg-white border-2 border-dashed border-gray-200 rounded-lg p-6 h-[400px] flex flex-col">
                     {isGenerating ? (
-                      <>
-                        <Loader className="h-8 w-8 animate-spin mb-2 text-indigo-500" />
-                        <p className="text-gray-500 mb-2">
-                          Generating your cover letter...
-                        </p>
-                      </>
+                      <div className="flex flex-col items-center justify-center h-full text-center">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                          <Loader className="h-6 w-6 text-indigo-600 animate-spin" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          {generationStep === 'analyzing' && 'Analyzing your resume...'}
+                          {generationStep === 'generating' && 'Generating cover letter...'}
+                          {generationStep === 'optimizing' && 'Optimizing for ATS...'}
+                          {generationStep === 'complete' && 'Complete!'}
+                        </h3>
+                        
+                        {/* Progress Steps */}
+                        <div className="space-y-2 mb-4 w-full max-w-sm">
+                          <div className="flex items-center text-sm">
+                            <div className={`w-4 h-4 rounded-full mr-3 flex items-center justify-center ${
+                              generationStep === 'analyzing' ? 'bg-indigo-600' : 
+                              ['generating', 'optimizing', 'complete'].includes(generationStep) ? 'bg-green-500' : 'bg-gray-300'
+                            }`}>
+                              {['generating', 'optimizing', 'complete'].includes(generationStep) ? (
+                                <Check className="h-2.5 w-2.5 text-white" />
+                              ) : generationStep === 'analyzing' ? (
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                              ) : null}
+                            </div>
+                            <span className={generationStep === 'analyzing' ? 'text-indigo-600 font-medium' : 
+                                           ['generating', 'optimizing', 'complete'].includes(generationStep) ? 'text-green-600' : 'text-gray-500'}>
+                              Resume analysis
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center text-sm">
+                            <div className={`w-4 h-4 rounded-full mr-3 flex items-center justify-center ${
+                              generationStep === 'generating' ? 'bg-indigo-600' : 
+                              ['optimizing', 'complete'].includes(generationStep) ? 'bg-green-500' : 'bg-gray-300'
+                            }`}>
+                              {['optimizing', 'complete'].includes(generationStep) ? (
+                                <Check className="h-2.5 w-2.5 text-white" />
+                              ) : generationStep === 'generating' ? (
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                              ) : null}
+                            </div>
+                            <span className={generationStep === 'generating' ? 'text-indigo-600 font-medium' : 
+                                           ['optimizing', 'complete'].includes(generationStep) ? 'text-green-600' : 'text-gray-500'}>
+                              Letter generation
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center text-sm">
+                            <div className={`w-4 h-4 rounded-full mr-3 flex items-center justify-center ${
+                              generationStep === 'optimizing' ? 'bg-indigo-600' : 
+                              generationStep === 'complete' ? 'bg-green-500' : 'bg-gray-300'
+                            }`}>
+                              {generationStep === 'complete' ? (
+                                <Check className="h-2.5 w-2.5 text-white" />
+                              ) : generationStep === 'optimizing' ? (
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                              ) : null}
+                            </div>
+                            <span className={generationStep === 'optimizing' ? 'text-indigo-600 font-medium' : 
+                                           generationStep === 'complete' ? 'text-green-600' : 'text-gray-500'}>
+                              ATS optimization
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-48 bg-gray-200 rounded-full h-1">
+                          <div className={`h-1 rounded-full transition-all duration-500 ${
+                            generationStep === 'analyzing' ? 'w-1/3 bg-indigo-600' :
+                            generationStep === 'generating' ? 'w-2/3 bg-indigo-600' :
+                            generationStep === 'optimizing' ? 'w-5/6 bg-indigo-600' :
+                            'w-full bg-green-500'
+                          }`}></div>
+                        </div>
+                      </div>
                     ) : (
                       <>
-                        <p className="text-gray-500 mb-2">
-                          Your generated cover letter will appear here
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          Fill in your resume and job description, then click
-                          "Generate Letter"
-                        </p>
+                        {/* Header */}
+                        <div className="flex items-center mb-4">
+                          <FileText className="h-6 w-6 text-gray-300 mr-3" />
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-400">Your Cover Letter</h3>
+                            <p className="text-sm text-gray-400">AI-generated content will appear here</p>
+                          </div>
+                        </div>
+                        
+                        {/* Placeholder Content */}
+                        <div className="flex-1 flex flex-col justify-center items-center text-center py-4">
+                          <div className="space-y-3 w-full max-w-md">
+                            <div className="h-3 bg-gray-100 rounded w-3/4 mx-auto"></div>
+                            <div className="h-3 bg-gray-100 rounded w-full mx-auto"></div>
+                            <div className="h-3 bg-gray-100 rounded w-5/6 mx-auto"></div>
+                            <div className="h-4"></div>
+                            <div className="h-3 bg-gray-100 rounded w-4/5 mx-auto"></div>
+                            <div className="h-3 bg-gray-100 rounded w-full mx-auto"></div>
+                            <div className="h-3 bg-gray-100 rounded w-2/3 mx-auto"></div>
+                          </div>
+                          <p className="text-gray-400 text-sm mt-4">
+                            Fill in your resume and job description, then click "Generate Letter"
+                          </p>
+                        </div>
+                        
+                        {/* Disabled Action Bar - Now inside the container */}
+                        <div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
+                          <div className="flex items-center text-gray-300">
+                            <Edit className="h-4 w-4 mr-1" />
+                            <span className="text-sm">AI Writing Assistant</span>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button disabled className="px-3 py-1 text-sm border border-gray-200 rounded text-gray-300 cursor-not-allowed flex items-center">
+                              <Copy className="h-4 w-4 mr-1" />
+                              Copy
+                            </button>
+                            <button disabled className="px-3 py-1 text-sm bg-gray-100 text-gray-300 rounded cursor-not-allowed flex items-center">
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </button>
+                          </div>
+                        </div>
                       </>
                     )}
                   </div>
 
-                  {/* ATS Analysis Placeholder */}
-                  <div className="bg-white border border-gray-200 border-dashed rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <Target className="h-5 w-5 text-gray-300 mr-2" />
-                        <h4 className="text-lg font-medium text-gray-400">ATS Compatibility Analysis</h4>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200">
-                          Score will appear here
+                  {/* Clean ATS Analysis Placeholder */}
+                  <div className="bg-white border-2 border-dashed border-gray-200 rounded-lg p-6">
+                    {isGenerating ? (
+                      <div className="text-center py-8">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          {generationStep === 'optimizing' || generationStep === 'complete' ? (
+                            <Target className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <Target className="h-5 w-5 text-gray-400" />
+                          )}
+                        </div>
+                        <h4 className="text-lg font-medium text-gray-900 mb-3">
+                          {generationStep === 'analyzing' && 'Preparing ATS analysis...'}
+                          {generationStep === 'generating' && 'Waiting for letter completion...'}
+                          {generationStep === 'optimizing' && 'Analyzing ATS compatibility...'}
+                          {generationStep === 'complete' && 'ATS analysis complete!'}
+                        </h4>
+                        <div className="w-32 bg-gray-200 rounded-full h-1 mx-auto">
+                          <div className={`h-1 rounded-full transition-all duration-500 ${
+                            generationStep === 'analyzing' ? 'w-0 bg-gray-300' :
+                            generationStep === 'generating' ? 'w-1/4 bg-indigo-600' :
+                            generationStep === 'optimizing' ? 'w-3/4 bg-indigo-600' :
+                            'w-full bg-green-500'
+                          }`}></div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Preview of what will be shown */}
-                    <div className="space-y-4 opacity-40">
-                      {/* Overall Score Preview */}
-                      <div>
-                        <div className="flex justify-between text-sm text-gray-400 mb-2">
-                          <span>Overall ATS Score</span>
-                          <span>--</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-3">
-                          <div className="h-3 bg-gray-200 rounded-full w-0"></div>
-                        </div>
-                      </div>
-
-                      {/* Score Breakdown Preview */}
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium text-gray-400 mb-3">Analysis Breakdown:</div>
-                        
-                        {[
-                          { label: "Parseability (30%)", width: 0 },
-                          { label: "Keyword Match (35%)", width: 0 },
-                          { label: "Skills Alignment (20%)", width: 0 },
-                          { label: "Format & Structure (10%)", width: 0 },
-                          { label: "Contact Info (3%)", width: 0 },
-                          { label: "Bonus Features (2%)", width: 0 }
-                        ].map((item, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <span className="text-sm text-gray-400">{item.label}</span>
-                            <div className="flex items-center">
-                              <div className="w-20 bg-gray-100 rounded-full h-2 mr-2">
-                                <div className="h-2 rounded-full bg-gray-200" style={{ width: `${item.width}%` }}></div>
-                              </div>
-                              <span className="text-sm font-medium text-gray-400 w-8">--</span>
+                    ) : (
+                      <>
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center">
+                            <Target className="h-6 w-6 text-gray-300 mr-3" />
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-400">ATS Compatibility Analysis</h4>
+                              <p className="text-sm text-gray-400">Detailed analysis will appear here</p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-
-                      {/* Keywords Preview */}
-                      <div className="border-t border-gray-100 pt-4">
-                        <div className="text-sm font-medium text-gray-400 mb-2">Keywords Analysis:</div>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-xs text-gray-400 mb-1 block">Missing Keywords:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {[1, 2, 3].map((i) => (
-                                <span key={i} className="px-2 py-1 bg-gray-50 text-gray-300 text-xs rounded border border-gray-100">
-                                  keyword {i}
-                                </span>
-                              ))}
-                            </div>
+                          <div className="px-3 py-1 rounded-full border border-gray-200 bg-gray-50">
+                            <span className="text-sm text-gray-400">Score: --/100</span>
                           </div>
-                          <div>
-                            <span className="text-xs text-gray-400 mb-1 block">Matched Keywords:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {[1, 2].map((i) => (
-                                <span key={i} className="px-2 py-1 bg-gray-50 text-gray-300 text-xs rounded border border-gray-100">
-                                  match {i}
-                                </span>
-                              ))}
+                        </div>
+
+                        {/* Disabled Features Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                          <div className="text-center p-4 border border-gray-100 rounded-lg bg-gray-50">
+                            <TrendingUp className="h-6 w-6 text-gray-300 mx-auto mb-2" />
+                            <h5 className="font-medium text-gray-400 text-sm mb-1">Keyword Matching</h5>
+                            <p className="text-xs text-gray-400">Job requirements analysis</p>
+                          </div>
+                          <div className="text-center p-4 border border-gray-100 rounded-lg bg-gray-50">
+                            <FileText className="h-6 w-6 text-gray-300 mx-auto mb-2" />
+                            <h5 className="font-medium text-gray-400 text-sm mb-1">Format Optimization</h5>
+                            <p className="text-xs text-gray-400">ATS-friendly structure</p>
+                          </div>
+                          <div className="text-center p-4 border border-gray-100 rounded-lg bg-gray-50">
+                            <Award className="h-6 w-6 text-gray-300 mx-auto mb-2" />
+                            <h5 className="font-medium text-gray-400 text-sm mb-1">Success Scoring</h5>
+                            <p className="text-xs text-gray-400">Pass likelihood prediction</p>
+                          </div>
+                        </div>
+
+                        {/* Disabled Score Preview */}
+                        <div className="border border-gray-100 rounded-lg p-4 bg-gray-50">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-gray-400">Overall ATS Score</span>
+                            <span className="text-sm text-gray-400">Analysis pending...</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                            <div className="bg-gray-300 h-2 rounded-full" style={{ width: '0%' }}></div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Keywords:</span>
+                              <span className="text-gray-400">--/--</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Format:</span>
+                              <span className="text-gray-400">--/--</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Skills:</span>
+                              <span className="text-gray-400">--/--</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Structure:</span>
+                              <span className="text-gray-400">--/--</span>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <div className="text-center mt-4">
-                      <p className="text-sm text-gray-400">
-                        Detailed ATS analysis will appear here after generation
-                      </p>
-                    </div>
+                        <div className="text-center mt-4">
+                          <p className="text-sm text-gray-400">
+                            Generate your cover letter to see detailed ATS analysis and recommendations
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
