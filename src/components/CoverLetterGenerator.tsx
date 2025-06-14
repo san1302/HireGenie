@@ -24,7 +24,10 @@ import {
   Edit,
   Undo2,
   Redo2,
-  Save
+  Save,
+  Sparkles,
+  Lightbulb,
+  Zap
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
@@ -85,6 +88,13 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [editHistory, setEditHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionStart, setSelectionStart] = useState(0);
+  const [selectionEnd, setSelectionEnd] = useState(0);
+  const [showImprovementOptions, setShowImprovementOptions] = useState(false);
+  const [isImproving, setIsImproving] = useState(false);
+  const [improvementSuggestions, setImprovementSuggestions] = useState<string[]>([]);
+  const [showQuickActions, setShowQuickActions] = useState(false);
   const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
   const [showATSDetails, setShowATSDetails] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -376,6 +386,10 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     setHasBeenEdited(false);
     setEditHistory([]);
     setHistoryIndex(-1);
+    setSelectedText("");
+    setShowImprovementOptions(false);
+    setShowQuickActions(false);
+    setImprovementSuggestions([]);
     setAtsAnalysis(null);
     setResumeFile(null);
     setFileName("");
@@ -499,6 +513,156 @@ John Smith`;
       title: "Draft cleared",
       description: "Auto-saved draft has been removed",
     });
+  };
+
+  // Handle text selection for AI improvements
+  const handleTextSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+    
+    if (selected.length > 0 && selected.trim().length > 10) {
+      setSelectedText(selected);
+      setSelectionStart(start);
+      setSelectionEnd(end);
+      setShowImprovementOptions(true);
+    } else {
+      setSelectedText("");
+      setShowImprovementOptions(false);
+      setImprovementSuggestions([]);
+    }
+  };
+
+  // AI text improvement function
+  const improveText = async (improvementType: string) => {
+    if (!selectedText.trim()) return;
+    
+    setIsImproving(true);
+    setImprovementSuggestions([]);
+    
+    try {
+      const response = await fetch("/api/improve-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: selectedText,
+          improvementType,
+          context: "cover letter"
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to improve text");
+      }
+      
+      const data = await response.json();
+      setImprovementSuggestions(data.suggestions || []);
+      
+    } catch (error) {
+      console.error("Error improving text:", error);
+      toast({
+        title: "Improvement failed",
+        description: "Unable to improve the selected text. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
+  // Replace selected text with improved version
+  const replaceWithImprovement = (improvedText: string) => {
+    const newContent = 
+      editableCoverLetter.substring(0, selectionStart) + 
+      improvedText + 
+      editableCoverLetter.substring(selectionEnd);
+    
+    setEditableCoverLetter(newContent);
+    setHasBeenEdited(true);
+    setShowImprovementOptions(false);
+    setSelectedText("");
+    setImprovementSuggestions([]);
+    
+    toast({
+      title: "Text improved",
+      description: "Selected text has been replaced with AI improvement",
+    });
+  };
+
+  // Smart section detection for quick actions
+  const detectSection = (sectionType: 'opening' | 'closing' | 'middle') => {
+    const content = editableCoverLetter;
+    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 0);
+    
+    if (paragraphs.length === 0) return null;
+    
+    switch (sectionType) {
+      case 'opening':
+        // First substantial paragraph (skip "Dear..." if present)
+        const firstParagraph = paragraphs.find(p => 
+          !p.toLowerCase().includes('dear ') && 
+          !p.toLowerCase().includes('to whom') &&
+          p.trim().length > 50
+        ) || paragraphs[0];
+        return {
+          text: firstParagraph,
+          start: content.indexOf(firstParagraph),
+          end: content.indexOf(firstParagraph) + firstParagraph.length
+        };
+        
+      case 'closing':
+        // Last substantial paragraph (skip signature if present)
+        const lastParagraph = paragraphs.reverse().find(p => 
+          !p.toLowerCase().includes('sincerely') && 
+          !p.toLowerCase().includes('best regards') &&
+          !p.toLowerCase().includes('yours truly') &&
+          p.trim().length > 50
+        ) || paragraphs[0];
+        return {
+          text: lastParagraph,
+          start: content.indexOf(lastParagraph),
+          end: content.indexOf(lastParagraph) + lastParagraph.length
+        };
+        
+      case 'middle':
+        // Middle paragraph(s) - skip first and last
+        if (paragraphs.length < 3) return null;
+        const middleParagraphs = paragraphs.slice(1, -1);
+        const middleText = middleParagraphs.join('\n\n');
+        return {
+          text: middleText,
+          start: content.indexOf(middleParagraphs[0]),
+          end: content.indexOf(middleParagraphs[middleParagraphs.length - 1]) + middleParagraphs[middleParagraphs.length - 1].length
+        };
+        
+      default:
+        return null;
+    }
+  };
+
+  // Quick action improvement
+  const improveSection = async (sectionType: 'opening' | 'closing' | 'middle', improvementType: string = 'professional') => {
+    const section = detectSection(sectionType);
+    if (!section) {
+      toast({
+        title: "Section not found",
+        description: `Could not detect the ${sectionType} section. Try selecting text manually.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Set selection state
+    setSelectedText(section.text);
+    setSelectionStart(section.start);
+    setSelectionEnd(section.end);
+    setShowImprovementOptions(true);
+    
+    // Automatically trigger improvement
+    await improveText(improvementType);
   };
 
   // Undo/Redo functionality
@@ -879,10 +1043,68 @@ John Smith`;
                     </div>
                   </div>
                   
+                  {/* Always-Visible AI Improvement Indicator */}
+                  <div className="mb-3 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-3">
+                    <div className="flex items-center">
+                      <div className="relative">
+                        <Sparkles className="h-4 w-4 text-indigo-600 mr-2 animate-pulse" />
+                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>
+                      </div>
+                      <span className="text-sm font-medium text-indigo-900">AI Writing Assistant</span>
+                      <span className="ml-2 text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
+                        Select text or use quick actions
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setShowQuickActions(!showQuickActions)}
+                      className="flex items-center text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      Quick Actions
+                      {showQuickActions ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                    </button>
+                  </div>
+
+                  {/* Quick Actions Panel */}
+                  {showQuickActions && (
+                    <div className="mb-3 p-3 bg-white border border-indigo-200 rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <button
+                          onClick={() => improveSection('opening', 'impactful')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center border border-blue-200"
+                        >
+                          <Lightbulb className="h-3 w-3 mr-1" />
+                          Improve Opening
+                        </button>
+                        <button
+                          onClick={() => improveSection('middle', 'professional')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100 disabled:opacity-50 flex items-center justify-center border border-green-200"
+                        >
+                          <Award className="h-3 w-3 mr-1" />
+                          Strengthen Body
+                        </button>
+                        <button
+                          onClick={() => improveSection('closing', 'enthusiastic')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 disabled:opacity-50 flex items-center justify-center border border-purple-200"
+                        >
+                          <Zap className="h-3 w-3 mr-1" />
+                          Enhance Closing
+                        </button>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 text-center">
+                        These actions automatically detect and improve specific sections of your cover letter
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Editable textarea */}
                   <textarea
                     value={editableCoverLetter}
                     onChange={(e) => handleCoverLetterEdit(e.target.value)}
+                    onSelect={handleTextSelection}
                     className="w-full h-[400px] p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     placeholder="Your generated cover letter will appear here for editing..."
                     style={{ 
@@ -896,7 +1118,7 @@ John Smith`;
                   {/* Helper text */}
                   <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
                     <span>
-                      💡 Tip: Use Ctrl+Z to undo, Ctrl+Y to redo. Changes are auto-saved.
+                      💡 Tip: Select text to improve it with AI • Use Ctrl+Z to undo, Ctrl+Y to redo • Changes are auto-saved
                     </span>
                     {editHistory.length > 1 && (
                       <span className="text-indigo-500">
@@ -904,6 +1126,88 @@ John Smith`;
                       </span>
                     )}
                   </div>
+
+                  {/* AI Improvement Options Panel */}
+                  {showImprovementOptions && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                      <div className="flex items-center mb-3">
+                        <Sparkles className="h-4 w-4 text-indigo-600 mr-2" />
+                        <h4 className="text-sm font-medium text-indigo-900">
+                          Improve Selected Text
+                        </h4>
+                        <button
+                          onClick={() => setShowImprovementOptions(false)}
+                          className="ml-auto text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      
+                      <div className="text-xs text-indigo-700 mb-3 bg-indigo-100 p-2 rounded">
+                        "{selectedText.substring(0, 100)}{selectedText.length > 100 ? '...' : ''}"
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                        <button
+                          onClick={() => improveText('professional')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                          <Lightbulb className="h-3 w-3 mr-1" />
+                          More Professional
+                        </button>
+                        <button
+                          onClick={() => improveText('enthusiastic')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-green-100 text-green-700 text-xs rounded hover:bg-green-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                          <Zap className="h-3 w-3 mr-1" />
+                          More Enthusiastic
+                        </button>
+                        <button
+                          onClick={() => improveText('concise')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded hover:bg-orange-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                          <AlignLeft className="h-3 w-3 mr-1" />
+                          More Concise
+                        </button>
+                        <button
+                          onClick={() => improveText('impactful')}
+                          disabled={isImproving}
+                          className="px-3 py-2 bg-purple-100 text-purple-700 text-xs rounded hover:bg-purple-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                          <Award className="h-3 w-3 mr-1" />
+                          More Impactful
+                        </button>
+                      </div>
+                      
+                      {isImproving && (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader className="h-4 animate-spin mr-2 text-indigo-600" />
+                          <span className="text-sm text-indigo-600">Generating improvements...</span>
+                        </div>
+                      )}
+                      
+                      {improvementSuggestions.length > 0 && (
+                        <div className="space-y-2">
+                          <h5 className="text-xs font-medium text-gray-700 mb-2">Choose an improvement:</h5>
+                          {improvementSuggestions.map((suggestion, index) => (
+                            <div key={index} className="bg-white p-3 rounded border border-gray-200 hover:border-indigo-300 transition-colors">
+                              <p className="text-sm text-gray-700 mb-2">{suggestion}</p>
+                              <button
+                                onClick={() => replaceWithImprovement(suggestion)}
+                                className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 flex items-center"
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Use This
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <div className="mt-4 flex justify-between items-center">
                     <button 
