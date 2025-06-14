@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Upload, 
   FileText, 
@@ -21,7 +21,10 @@ import {
   MessageCircle,
   AlignLeft,
   File,
-  Edit
+  Edit,
+  Undo2,
+  Redo2,
+  Save
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
@@ -79,6 +82,9 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [coverLetter, setCoverLetter] = useState("");
   const [editableCoverLetter, setEditableCoverLetter] = useState("");
   const [hasBeenEdited, setHasBeenEdited] = useState(false);
+  const [editHistory, setEditHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
   const [showATSDetails, setShowATSDetails] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -232,6 +238,14 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
       setEditableCoverLetter(data.coverLetter || sampleCoverLetter);
       setHasBeenEdited(false);
       
+      // Initialize edit history with generated content
+      setEditHistory([data.coverLetter || sampleCoverLetter]);
+      setHistoryIndex(0);
+      
+      // Clear any saved draft
+      localStorage.removeItem('coverLetterDraft');
+      localStorage.removeItem('coverLetterLastSaved');
+      
       // Set ATS analysis data
       if (data.atsAnalysis) {
         setAtsAnalysis(data.atsAnalysis);
@@ -360,6 +374,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     setCoverLetter("");
     setEditableCoverLetter("");
     setHasBeenEdited(false);
+    setEditHistory([]);
+    setHistoryIndex(-1);
     setAtsAnalysis(null);
     setResumeFile(null);
     setFileName("");
@@ -368,6 +384,10 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     setLength("Standard");
     setOutputFormat("txt");
     setShowATSDetails(false);
+    
+    // Clear localStorage
+    localStorage.removeItem('coverLetterDraft');
+    localStorage.removeItem('coverLetterLastSaved');
   };
 
   // ATS Score Color Helper
@@ -431,6 +451,117 @@ John Smith`;
   };
 
   const lengthStatus = getLengthStatus(wordCount);
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (editableCoverLetter) {
+      setIsAutoSaving(true);
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem('coverLetterDraft', editableCoverLetter);
+        localStorage.setItem('coverLetterLastSaved', new Date().toISOString());
+        setIsAutoSaving(false);
+      }, 1000); // Save after 1 second of inactivity
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [editableCoverLetter]);
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('coverLetterDraft');
+    const lastSaved = localStorage.getItem('coverLetterLastSaved');
+    
+    if (savedDraft && lastSaved) {
+      const savedDate = new Date(lastSaved);
+      const now = new Date();
+      const hoursSinceLastSave = (now.getTime() - savedDate.getTime()) / (1000 * 60 * 60);
+      
+      // Only load if saved within last 24 hours
+      if (hoursSinceLastSave < 24) {
+        setEditableCoverLetter(savedDraft);
+        setHasBeenEdited(true);
+        setEditHistory([savedDraft]);
+        setHistoryIndex(0);
+        
+        toast({
+          title: "Draft recovered",
+          description: `Restored your work from ${savedDate.toLocaleString()}`,
+        });
+      }
+    }
+  }, []);
+
+  // Clear saved draft manually
+  const clearSavedDraft = () => {
+    localStorage.removeItem('coverLetterDraft');
+    localStorage.removeItem('coverLetterLastSaved');
+    toast({
+      title: "Draft cleared",
+      description: "Auto-saved draft has been removed",
+    });
+  };
+
+  // Undo/Redo functionality
+  const addToHistory = (content: string) => {
+    const newHistory = editHistory.slice(0, historyIndex + 1);
+    newHistory.push(content);
+    
+    // Limit history to last 50 changes
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    }
+    
+    setEditHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setEditableCoverLetter(editHistory[newIndex]);
+      setHasBeenEdited(editHistory[newIndex] !== coverLetter);
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < editHistory.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setEditableCoverLetter(editHistory[newIndex]);
+      setHasBeenEdited(editHistory[newIndex] !== coverLetter);
+    }
+  };
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < editHistory.length - 1;
+
+  // Add to history when content changes (debounced)
+  useEffect(() => {
+    if (editableCoverLetter && editableCoverLetter !== (editHistory[historyIndex] || '')) {
+      const timeoutId = setTimeout(() => {
+        addToHistory(editableCoverLetter);
+      }, 1000); // Add to history after 1 second of inactivity
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [editableCoverLetter, editHistory, historyIndex, addToHistory]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+      } else if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.key === 'z' && event.shiftKey))) {
+        event.preventDefault();
+        redo();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   return (
     <section id="cover-letter-tool" className="py-16">
@@ -704,10 +835,47 @@ John Smith`;
                           Edited
                         </div>
                       )}
+                      {isAutoSaving && (
+                        <div className="flex items-center px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full border border-blue-200">
+                          <Save className="h-3 w-3 mr-1 animate-pulse" />
+                          Saving...
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-500 flex items-center space-x-2">
-                      <span>{wordCount} words</span>
-                      <span className={lengthStatus.color}>• {lengthStatus.message}</span>
+                    <div className="flex items-center space-x-4">
+                      {/* Undo/Redo Controls */}
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={undo}
+                          disabled={!canUndo}
+                          className={`p-1 rounded text-xs ${
+                            canUndo 
+                              ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
+                              : 'text-gray-300 cursor-not-allowed'
+                          }`}
+                          title="Undo (Ctrl+Z)"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={redo}
+                          disabled={!canRedo}
+                          className={`p-1 rounded text-xs ${
+                            canRedo 
+                              ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
+                              : 'text-gray-300 cursor-not-allowed'
+                          }`}
+                          title="Redo (Ctrl+Y)"
+                        >
+                          <Redo2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      
+                      {/* Word Count & Status */}
+                      <div className="text-xs text-gray-500 flex items-center space-x-2">
+                        <span>{wordCount} words</span>
+                        <span className={lengthStatus.color}>• {lengthStatus.message}</span>
+                      </div>
                     </div>
                   </div>
                   
@@ -717,8 +885,25 @@ John Smith`;
                     onChange={(e) => handleCoverLetterEdit(e.target.value)}
                     className="w-full h-[400px] p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     placeholder="Your generated cover letter will appear here for editing..."
-                    style={{ fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}
+                    style={{ 
+                      fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                      whiteSpace: 'pre-wrap',
+                      wordWrap: 'break-word'
+                    }}
+                    spellCheck={true}
                   />
+                  
+                  {/* Helper text */}
+                  <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
+                    <span>
+                      💡 Tip: Use Ctrl+Z to undo, Ctrl+Y to redo. Changes are auto-saved.
+                    </span>
+                    {editHistory.length > 1 && (
+                      <span className="text-indigo-500">
+                        {editHistory.length} versions in history
+                      </span>
+                    )}
+                  </div>
                   
                   <div className="mt-4 flex justify-between items-center">
                     <button 
