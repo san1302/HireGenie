@@ -7,11 +7,8 @@ import {
   TrendingUp, 
   Clock, 
   Award,
-  Settings,
   User,
-  ChevronRight,
   Sparkles,
-  AlertCircle,
   Crown
 } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -242,10 +239,10 @@ export default async function Dashboard() {
           </div>
 
           {/* Main Content */}
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             
-            {/* Cover Letter Generator - Main Section */}
-            <div className="xl:col-span-3">
+            {/* Cover Letter Generator - Full Width */}
+            <div className="w-full">
               <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm" id="generate">
                 <CardHeader className="pb-6">
                   <div className="flex items-center justify-between">
@@ -268,90 +265,6 @@ export default async function Dashboard() {
                     userUsage={usageResult}
                     hasActiveSubscription={!!subscription}
                   />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="xl:col-span-1 space-y-6">
-              
-              {/* Quick Actions */}
-              <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg text-gray-900">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Link href="/dashboard/history">
-                    <Button variant="outline" className="w-full justify-start" size="sm">
-                      <FileText className="h-4 w-4 mr-2" />
-                      View History
-                      <ChevronRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/settings">
-                    <Button variant="outline" className="w-full justify-start" size="sm">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                      <ChevronRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/analytics">
-                    <Button variant="outline" className="w-full justify-start" size="sm">
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Analytics
-                      <ChevronRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              {/* Account Info */}
-              <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg text-gray-900">Account</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-                      <User className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {user.email}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Member since {new Date(user.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Plan</span>
-                      <span className="font-medium text-gray-900">{stats.planType}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Status</span>
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        Active
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Tips Card */}
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-purple-50 border-blue-100">
-                <CardHeader>
-                  <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-blue-600" />
-                    Pro Tip
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    For best results, make sure your resume is up-to-date and the job description includes specific requirements and keywords.
-                  </p>
                 </CardContent>
               </Card>
             </div>

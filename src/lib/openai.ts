@@ -8,6 +8,7 @@ export interface CoverLetterRequest {
   resumeText: string;
   jobDescription: string;
   tone?: 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal';
+  length?: 'Concise' | 'Standard' | 'Detailed' | 'Comprehensive';
 }
 
 export interface CoverLetterResponse {
@@ -168,7 +169,8 @@ ${input}`;
 export async function generateCoverLetter({
   resumeText,
   jobDescription,
-  tone = 'Professional'
+  tone = 'Professional',
+  length = 'Standard'
 }: CoverLetterRequest): Promise<CoverLetterResult> {
   try {
     // Validate inputs
@@ -216,7 +218,7 @@ export async function generateCoverLetter({
     console.log('Step 2: Generating cover letter with processed job description...');
 
     // Create the prompt
-    const systemPrompt = createSystemPrompt(tone);
+    const systemPrompt = createSystemPrompt(tone, length);
     const userPrompt = createUserPrompt(resumeText, processedJobDescription);
 
     console.log(`Model: ${DEFAULT_MODEL}, Tone: ${tone}`);
@@ -315,15 +317,31 @@ export async function generateCoverLetter({
 }
 
 /**
- * Create system prompt based on tone
+ * Create system prompt based on tone and length
  */
-function createSystemPrompt(tone: string): string {
+function createSystemPrompt(tone: string, length: string): string {
+  // Get length-specific instructions
+  const getLengthInstructions = (length: string): string => {
+    switch (length) {
+      case 'Concise':
+        return 'Keep it concise (2-3 paragraphs, 150-250 words). Focus on the most impactful points.';
+      case 'Standard':
+        return 'Keep it standard length (3-4 paragraphs, 250-350 words). Balance detail with conciseness.';
+      case 'Detailed':
+        return 'Provide detailed coverage (4-5 paragraphs, 350-450 words). Include specific examples and achievements.';
+      case 'Comprehensive':
+        return 'Provide comprehensive coverage (5+ paragraphs, 450+ words). Include extensive detail about experience and qualifications.';
+      default:
+        return 'Keep it concise (3-4 paragraphs).';
+    }
+  };
+
   const basePrompt = `You are an expert cover letter writer. Your task is to create personalized, compelling cover letters that help job seekers stand out.
 
 Key requirements:
 - Write in a ${tone} tone
 - Keep it as organic as possible
-- Keep it concise (3-4 paragraphs)
+- ${getLengthInstructions(length)}
 - Highlight relevant skills and experiences from the resume
 - Show enthusiasm for the specific role and company
 - Include a strong opening and closing

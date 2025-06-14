@@ -17,7 +17,10 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  Crown
+  Crown,
+  MessageCircle,
+  AlignLeft,
+  File
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
@@ -70,6 +73,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [tone, setTone] = useState("Professional");
+  const [length, setLength] = useState("Standard");
+  const [outputFormat, setOutputFormat] = useState("txt");
   const [coverLetter, setCoverLetter] = useState("");
   const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
   const [showATSDetails, setShowATSDetails] = useState(false);
@@ -205,6 +210,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
 
       formData.append("job_description", jobDescription);
       formData.append("tone", tone);
+      formData.append("length", length);
+      formData.append("output_format", outputFormat);
 
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -252,13 +259,94 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   };
 
   const handleDownload = () => {
-    const element = document.createElement("a");
-    const file = new Blob([coverLetter], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = "cover-letter.txt";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const timestamp = new Date().toISOString().split('T')[0];
+    const baseFilename = `cover-letter-${timestamp}`;
+    
+    if (outputFormat === 'pdf') {
+      // Create PDF
+      const element = document.createElement('div');
+      element.innerHTML = `
+        <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 40px;">
+          <div style="white-space: pre-wrap;">${coverLetter}</div>
+        </div>
+      `;
+      
+      // Use the browser's print functionality to generate PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Cover Letter</title>
+              <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.6; margin: 40px; }
+                .content { white-space: pre-wrap; }
+                @media print { 
+                  body { margin: 0; }
+                  .no-print { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="content">${coverLetter}</div>
+              <div class="no-print" style="margin-top: 20px; text-align: center;">
+                <button onclick="window.print()" style="padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                  Save as PDF
+                </button>
+                <button onclick="window.close()" style="padding: 10px 20px; background: #6B7280; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+                  Close
+                </button>
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    } else if (outputFormat === 'docx') {
+      // Create a simplified DOCX-like format using RTF
+      const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}\\f0\\fs24 ${coverLetter.replace(/\n/g, '\\par ')}}`;
+      const blob = new Blob([rtfContent], { type: 'application/rtf' });
+      const element = document.createElement("a");
+      element.href = URL.createObjectURL(blob);
+      element.download = `${baseFilename}.rtf`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    } else if (outputFormat === 'html') {
+      // Create HTML format
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cover Letter</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px; }
+        .letter-content { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="letter-content">${coverLetter}</div>
+</body>
+</html>
+      `;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const element = document.createElement("a");
+      element.href = URL.createObjectURL(blob);
+      element.download = `${baseFilename}.html`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    } else {
+      // Default TXT format
+      const element = document.createElement("a");
+      const file = new Blob([coverLetter], { type: "text/plain" });
+      element.href = URL.createObjectURL(file);
+      element.download = `${baseFilename}.txt`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    }
   };
 
   const handleReset = () => {
@@ -268,6 +356,8 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
     setFileName("");
     setResumeText("");
     setJobDescription("");
+    setLength("Standard");
+    setOutputFormat("txt");
     setShowATSDetails(false);
   };
 
@@ -313,7 +403,7 @@ John Smith`;
           </p>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-5xl mx-auto overflow-hidden relative">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mx-auto overflow-hidden relative">
           {/* Locked State Overlay */}
           {isLocked && (
             <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 rounded-xl flex items-center justify-center">
@@ -348,7 +438,7 @@ John Smith`;
           
           <div className={`flex flex-col md:flex-row ${isLocked ? 'opacity-40 pointer-events-none' : ''}`}>
             {/* Left Side - Input */}
-            <div className="md:w-1/2 p-6 md:border-r border-gray-200">
+            <div className="md:w-1/3 p-6 md:border-r border-gray-200">
               <div className="mb-6">
                 <div className="flex space-x-4 border-b border-gray-200">
                   <button 
@@ -480,17 +570,69 @@ John Smith`;
                 ></textarea>
               </div>
               
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
+              <div className="space-y-4 mb-6">
+                {/* Customization Header */}
+                <div className="flex items-center mb-3">
                   <Settings className="h-5 w-5 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-600">Tone:</span>
-                  <select className="ml-2 text-sm border-none bg-transparent text-gray-700 focus:ring-0" value={tone} onChange={(e) => setTone(e.target.value)}>
-                    <option>Professional</option>
-                    <option>Conversational</option>
-                    <option>Enthusiastic</option>
-                    <option>Formal</option>
+                  <span className="text-sm font-medium text-gray-700">Customization Options</span>
+                </div>
+                
+                {/* Tone Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+                    <MessageCircle className="h-3 w-3 mr-1" />
+                    Tone
+                  </label>
+                  <select 
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                    value={tone} 
+                    onChange={(e) => setTone(e.target.value)}
+                  >
+                    <option value="Professional">Professional</option>
+                    <option value="Conversational">Conversational</option>
+                    <option value="Enthusiastic">Enthusiastic</option>
+                    <option value="Formal">Formal</option>
                   </select>
                 </div>
+
+                {/* Length Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+                    <AlignLeft className="h-3 w-3 mr-1" />
+                    Length
+                  </label>
+                  <select 
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                    value={length} 
+                    onChange={(e) => setLength(e.target.value)}
+                  >
+                    <option value="Concise">Concise (2-3 paragraphs)</option>
+                    <option value="Standard">Standard (3-4 paragraphs)</option>
+                    <option value="Detailed">Detailed (4-5 paragraphs)</option>
+                    <option value="Comprehensive">Comprehensive (5+ paragraphs)</option>
+                  </select>
+                </div>
+
+                {/* Output Format Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+                    <File className="h-3 w-3 mr-1" />
+                    Download Format
+                  </label>
+                  <select 
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                    value={outputFormat} 
+                    onChange={(e) => setOutputFormat(e.target.value)}
+                  >
+                    <option value="txt">Plain Text (.txt)</option>
+                    <option value="html">HTML Document (.html)</option>
+                    <option value="docx">Word Document (.rtf)</option>
+                    <option value="pdf">PDF Document (Print)</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end mb-6">
                 <button 
                   className={`px-4 py-2 bg-indigo-600 text-white rounded-lg transition-colors flex items-center ${isGenerating ? "opacity-75 cursor-not-allowed" : "hover:bg-indigo-700"}`} 
                   onClick={handleGenerate} 
@@ -507,7 +649,7 @@ John Smith`;
             </div>
             
             {/* Right Side - Output */}
-            <div className="md:w-1/2 p-6 bg-gray-50">
+            <div className="md:w-2/3 p-6 bg-gray-50">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Your Cover Letter
               </h3>
@@ -538,7 +680,7 @@ John Smith`;
                         className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
                       >
                         <Download className="h-4 w-4 mr-1" />
-                        Download
+                        Download {outputFormat.toUpperCase()}
                       </button>
                     </div>
                   </div>

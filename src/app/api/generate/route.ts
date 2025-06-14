@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
     const resumeText = formData.get("resume_text") as string | null;
     const jobDescription = formData.get("job_description") as string;
     const tone = formData.get("tone") as string || "Professional";
+    const length = formData.get("length") as string || "Standard";
 
     if (!jobDescription) {
       return NextResponse.json(
@@ -159,7 +160,8 @@ export async function POST(request: NextRequest) {
     const coverLetterResult = await generateCoverLetter({
       resumeText: sanitizedResumeText,
       jobDescription: sanitizedJobDescription,
-      tone: tone as 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal'
+      tone: tone as 'Professional' | 'Conversational' | 'Enthusiastic' | 'Formal',
+      length: length as 'Concise' | 'Standard' | 'Detailed' | 'Comprehensive'
     });
 
     // Handle cover letter generation errors
