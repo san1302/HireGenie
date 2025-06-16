@@ -105,6 +105,18 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [isImproving, setIsImproving] = useState(false);
   const [improvementSuggestions, setImprovementSuggestions] = useState<string[]>([]);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  
+  // Enhanced Quick Actions state
+  const [showQuickActionsModal, setShowQuickActionsModal] = useState(false);
+  const [sectionImprovements, setSectionImprovements] = useState<{[key: string]: string}>({});
+  const [currentSection, setCurrentSection] = useState<string>('');
+  const [sectionAnalysis, setSectionAnalysis] = useState<{[key: string]: {score: number, issues: string[]}}>({});
+  
+  // New state for expandable and editable functionality
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+  const [editableSections, setEditableSections] = useState<{[key: string]: string}>({});
+  const [editableImprovements, setEditableImprovements] = useState<{[key: string]: string}>({});
+  const [mainTextareaExpanded, setMainTextareaExpanded] = useState(false);
 
   // Undo/Redo functionality
   const [editHistory, setEditHistory] = useState<string[]>([]);
@@ -268,13 +280,23 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
 
   const improveSection = async (section: string, style: string) => {
     setIsImproving(true);
+    setCurrentSection(section);
     try {
+      // Map section names to API expected values
+      const sectionMapping: {[key: string]: string} = {
+        'opening': 'opening',
+        'body': 'middle',  // API expects 'middle' for body section
+        'closing': 'closing'
+      };
+      
+      const apiSection = sectionMapping[section] || section;
+      
       const response = await fetch('/api/improve-section', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           coverLetter: editableCoverLetter,
-          section,
+          section: apiSection,  // Use mapped section name
           style,
           jobDescription
         })
@@ -283,38 +305,245 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
       if (response.ok) {
         const data = await response.json();
         if (data.improvedText) {
-          addToHistory(editableCoverLetter);
-          setEditableCoverLetter(data.improvedText);
-          setHasBeenEdited(true);
+          // Store the improvement in state instead of directly applying it
+          setSectionImprovements(prev => ({ ...prev, [section]: data.improvedText }));
           toast({
             title: "Section improved!",
-            description: `${section} section has been enhanced.`
+            description: `${section} section has been enhanced. Review and apply the changes.`
           });
         }
+      } else {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        toast({
+          title: "Error",
+          description: errorData.message || "Failed to improve section. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error improving section:', error);
+      toast({
+        title: "Error",
+        description: "Failed to improve section. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsImproving(false);
+      setCurrentSection('');
     }
   };
 
   const replaceWithImprovement = (improvement: string) => {
-    const newContent = editableCoverLetter.substring(0, selectionStart) +
-      improvement +
-      editableCoverLetter.substring(selectionEnd);
-
-    addToHistory(editableCoverLetter);
+    const newContent = editableCoverLetter.substring(0, selectionStart) + 
+                      improvement + 
+                      editableCoverLetter.substring(selectionEnd);
+    
     setEditableCoverLetter(newContent);
     setHasBeenEdited(true);
     setShowImprovementOptions(false);
     setImprovementSuggestions([]);
-
-    toast({
-      title: "Text improved!",
-      description: "Selected text has been enhanced."
-    });
+    
+    // Auto-save after improvement
+    setIsAutoSaving(true);
+    setTimeout(() => setIsAutoSaving(false), 1000);
   };
+
+  // Section analysis helper functions
+  const analyzeCoverLetterSections = (content: string) => {
+    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 0);
+    const analysis: {[key: string]: {score: number, issues: string[]}} = {};
+    
+    if (paragraphs.length > 0) {
+      // Opening paragraph analysis
+      const opening = paragraphs[0];
+      const openingIssues = [];
+      let openingScore = 70;
+      
+      if (opening.length < 100) openingIssues.push("Too short - needs more impact");
+      if (!opening.toLowerCase().includes('position') && !opening.toLowerCase().includes('role')) {
+        openingIssues.push("Doesn't mention the specific position");
+        openingScore -= 15;
+      }
+      if (!opening.toLowerCase().includes('company') && !opening.toLowerCase().includes('organization')) {
+        openingIssues.push("Doesn't mention the company name");
+        openingScore -= 10;
+      }
+      if (opening.startsWith('Dear Hiring Manager') || opening.startsWith('To Whom')) {
+        openingIssues.push("Generic greeting - try to find specific contact");
+        openingScore -= 5;
+      }
+      
+      analysis.opening = { score: Math.max(openingScore - openingIssues.length * 5, 0), issues: openingIssues };
+    }
+    
+    if (paragraphs.length > 1) {
+      // Body paragraphs analysis
+      const bodyParagraphs = paragraphs.slice(1, -1);
+      const bodyIssues = [];
+      let bodyScore = 75;
+      
+      if (bodyParagraphs.length === 0) {
+        bodyIssues.push("Missing body paragraphs");
+        bodyScore = 20;
+      } else {
+        const bodyText = bodyParagraphs.join(' ');
+        if (bodyText.length < 200) bodyIssues.push("Body content too brief");
+        if (!bodyText.toLowerCase().includes('experience') && !bodyText.toLowerCase().includes('skill')) {
+          bodyIssues.push("Lacks specific experience or skills");
+          bodyScore -= 15;
+        }
+        if (!bodyText.includes('achieve') && !bodyText.includes('result') && !bodyText.includes('impact')) {
+          bodyIssues.push("Missing quantifiable achievements");
+          bodyScore -= 10;
+        }
+      }
+      
+      analysis.body = { score: Math.max(bodyScore - bodyIssues.length * 5, 0), issues: bodyIssues };
+    }
+    
+    if (paragraphs.length > 1) {
+      // Closing paragraph analysis
+      const closing = paragraphs[paragraphs.length - 1];
+      const closingIssues = [];
+      let closingScore = 80;
+      
+      if (closing.length < 50) closingIssues.push("Too brief - needs stronger call to action");
+      if (!closing.toLowerCase().includes('interview') && !closing.toLowerCase().includes('discuss') && !closing.toLowerCase().includes('contact')) {
+        closingIssues.push("Missing call to action");
+        closingScore -= 15;
+      }
+      if (!closing.toLowerCase().includes('thank') && !closing.toLowerCase().includes('appreciate')) {
+        closingIssues.push("Could be more courteous");
+        closingScore -= 5;
+      }
+      
+      analysis.closing = { score: Math.max(closingScore - closingIssues.length * 5, 0), issues: closingIssues };
+    }
+    
+    return analysis;
+  };
+
+  const getSectionText = (section: string, content: string) => {
+    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 0);
+    
+    switch (section) {
+      case 'opening':
+        return paragraphs[0] || '';
+      case 'body':
+        return paragraphs.slice(1, -1).join('\n\n') || '';
+      case 'closing':
+        return paragraphs[paragraphs.length - 1] || '';
+      default:
+        return '';
+    }
+  };
+
+  const applySectionImprovement = (section: string, improvement: string) => {
+    const paragraphs = editableCoverLetter.split('\n\n').filter(p => p.trim().length > 0);
+    let newContent = '';
+    
+    switch (section) {
+      case 'opening':
+        newContent = improvement + '\n\n' + paragraphs.slice(1).join('\n\n');
+        break;
+      case 'body':
+        newContent = paragraphs[0] + '\n\n' + improvement + '\n\n' + paragraphs[paragraphs.length - 1];
+        break;
+      case 'closing':
+        newContent = paragraphs.slice(0, -1).join('\n\n') + '\n\n' + improvement;
+        break;
+      default:
+        return;
+    }
+    
+    setEditableCoverLetter(newContent);
+    setHasBeenEdited(true);
+    setSectionImprovements(prev => ({ ...prev, [section]: improvement }));
+    
+    // Auto-save after improvement
+    setIsAutoSaving(true);
+    setTimeout(() => setIsAutoSaving(false), 1000);
+  };
+
+  // New helper functions for expandable functionality
+  const toggleSectionExpansion = (sectionKey: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
+
+  const getTextareaHeight = (content: string, isExpanded: boolean, isFullExpand: boolean = false) => {
+    if (isFullExpand) return '60vh';
+    if (isExpanded) return '300px';
+    
+    // Dynamic height based on content with better minimum height
+    const lines = content.split('\n').length;
+    const minHeight = 200; // Increased from 120px to 200px for better usability
+    const lineHeight = 24;
+    const calculatedHeight = Math.max(minHeight, Math.min(lines * lineHeight, 350)); // Increased max from 200px to 350px
+    
+    return `${calculatedHeight}px`;
+  };
+
+  // Helper function to get full content height
+  const getFullContentHeight = (content: string) => {
+    const lines = content.split('\n').length;
+    const lineHeight = 24;
+    const padding = 32; // Account for padding
+    const calculatedHeight = Math.max(200, lines * lineHeight + padding);
+    return `${Math.min(calculatedHeight, window.innerHeight * 0.8)}px`; // Max 80% of viewport height
+  };
+
+  const initializeEditableSections = () => {
+    const sections = ['opening', 'body', 'closing'];
+    const newEditableSections: {[key: string]: string} = {};
+    
+    sections.forEach(section => {
+      newEditableSections[section] = getSectionText(section, editableCoverLetter);
+    });
+    
+    setEditableSections(newEditableSections);
+    setEditableImprovements({ ...sectionImprovements });
+  };
+
+  const applyModalChanges = () => {
+    // Apply changes from editable sections back to main cover letter
+    const updatedSections = { ...editableSections };
+    let newContent = '';
+    
+    if (updatedSections.opening && updatedSections.body && updatedSections.closing) {
+      newContent = `${updatedSections.opening}\n\n${updatedSections.body}\n\n${updatedSections.closing}`;
+    } else if (updatedSections.opening && updatedSections.closing) {
+      newContent = `${updatedSections.opening}\n\n${updatedSections.closing}`;
+    } else {
+      // Fallback to original structure
+      newContent = editableCoverLetter;
+    }
+    
+    setEditableCoverLetter(newContent);
+    setHasBeenEdited(true);
+    
+    // Update improvements
+    setSectionImprovements({ ...editableImprovements });
+    
+    toast({
+      title: "Changes Applied",
+      description: "Your edits have been applied to the cover letter."
+    });
+    
+    // Auto-save
+    setIsAutoSaving(true);
+    setTimeout(() => setIsAutoSaving(false), 1000);
+  };
+
+  // Initialize editable sections when modal opens
+  useEffect(() => {
+    if (showQuickActionsModal && editableCoverLetter) {
+      initializeEditableSections();
+    }
+  }, [showQuickActionsModal, editableCoverLetter]);
 
   // Check if we should show mobile wizard (screen width < 768px)
   useEffect(() => {
@@ -1128,30 +1357,31 @@ John Smith`;
                           </span>
                         </div>
 
-                        <div className="flex flex-col gap-2">
+                        <div className="mt-4 flex justify-between items-center">
                           <button
-                            onClick={handleCopy}
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg hover:border-gray-300 text-gray-600 flex items-center justify-center transition-colors"
+                            className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
+                            onClick={handleReset}
                           >
-                            {copySuccess ? <Check className="h-4 w-4 mr-2 text-green-500" /> : <Copy className="h-4 w-4 mr-2" />}
-                            {copySuccess ? "Copied!" : "Copy to Clipboard"}
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Reset
                           </button>
-                          <button
-                            onClick={handleDownload}
-                            className="w-full px-4 py-3 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center justify-center transition-colors"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download {outputFormat.toUpperCase()}
-                          </button>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={handleCopy}
+                              className="px-3 py-1 text-sm border border-gray-200 rounded hover:border-gray-300 text-gray-600 flex items-center"
+                            >
+                              {copySuccess ? <Check className="h-4 w-4 mr-1 text-green-500" /> : <Copy className="h-4 w-4 mr-1" />}
+                              {copySuccess ? "Copied!" : "Copy"}
+                            </button>
+                            <button
+                              onClick={handleDownload}
+                              className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download {outputFormat.toUpperCase()}
+                            </button>
+                          </div>
                         </div>
-
-                        <button
-                          className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center justify-center mt-2"
-                          onClick={handleReset}
-                        >
-                          <RefreshCw className="h-4 w-4 mr-1" />
-                          Start Over
-                        </button>
                       </div>
                     </>
                   )}
@@ -1471,65 +1701,407 @@ John Smith`;
                             </span>
                           </div>
                           <button
-                            onClick={() => setShowQuickActions(!showQuickActions)}
-                            className="flex items-center text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                            onClick={() => {
+                              const analysis = analyzeCoverLetterSections(editableCoverLetter);
+                              setSectionAnalysis(analysis);
+                              setShowQuickActionsModal(true);
+                            }}
+                            className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                           >
-                            <Zap className="h-3 w-3 mr-1" />
-                            Quick Actions
-                            {showQuickActions ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                            <Zap className="h-4 w-4 mr-2" />
+                            🚀 AI Assistant
                           </button>
                         </div>
 
-                        {/* Quick Actions Panel */}
-                        {showQuickActions && (
-                          <div className="mb-3 p-3 bg-white border border-indigo-200 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                              <button
-                                onClick={() => improveSection('opening', 'impactful')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center border border-blue-200"
-                              >
-                                <Lightbulb className="h-3 w-3 mr-1" />
-                                Improve Opening
-                              </button>
-                              <button
-                                onClick={() => improveSection('middle', 'professional')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100 disabled:opacity-50 flex items-center justify-center border border-green-200"
-                              >
-                                <Award className="h-3 w-3 mr-1" />
-                                Strengthen Body
-                              </button>
-                              <button
-                                onClick={() => improveSection('closing', 'enthusiastic')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 disabled:opacity-50 flex items-center justify-center border border-purple-200"
-                              >
-                                <Zap className="h-3 w-3 mr-1" />
-                                Enhance Closing
-                              </button>
-                            </div>
-                            <div className="mt-2 text-xs text-gray-500 text-center">
-                              These actions automatically detect and improve specific sections of your cover letter
+                        {/* Enhanced Quick Actions Modal */}
+                        {showQuickActionsModal && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                              {/* Header */}
+                              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                <div className="flex items-center">
+                                  <div className="relative">
+                                    <Zap className="h-6 w-6 text-indigo-600 mr-3" />
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full animate-ping"></div>
+                                  </div>
+                                  <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">🚀 AI Writing Assistant</h3>
+                                    <p className="text-sm text-gray-500">Analyze and improve your cover letter sections</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => setShowQuickActionsModal(false)}
+                                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  <X className="h-6 w-6" />
+                                </button>
+                              </div>
+
+                              {/* Content */}
+                              <div className="p-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                  {/* Current Cover Letter Analysis */}
+                                  <div className="space-y-6">
+                                    <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                                      <FileText className="h-5 w-5 text-gray-600 mr-2" />
+                                      Current Cover Letter Analysis
+                                    </h4>
+
+                                    {/* Opening Section */}
+                                    <div className="border border-gray-200 rounded-lg p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium text-gray-800">Opening Paragraph</h5>
+                                        <div className="flex items-center">
+                                          <div className={`w-3 h-3 rounded-full mr-2 ${
+                                            (sectionAnalysis.opening?.score || 0) >= 80 ? 'bg-green-500' :
+                                            (sectionAnalysis.opening?.score || 0) >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                          }`}></div>
+                                          <span className="text-sm font-medium text-gray-600">
+                                            {sectionAnalysis.opening?.score || 0}/100
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Editable Opening Section */}
+                                      <div className="relative mb-3">
+                                        <textarea
+                                          value={editableSections.opening || getSectionText('opening', editableCoverLetter)}
+                                          onChange={(e) => setEditableSections(prev => ({ ...prev, opening: e.target.value }))}
+                                          className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-300"
+                                          placeholder="Opening paragraph content..."
+                                          style={{
+                                            height: getTextareaHeight(
+                                              editableSections.opening || getSectionText('opening', editableCoverLetter),
+                                              expandedSections['opening'],
+                                              expandedSections['opening-full']
+                                            ),
+                                            maxHeight: expandedSections['opening-full'] ? '40vh' : '300px',
+                                            overflowY: 'auto'
+                                          }}
+                                        />
+                                        
+                                        {/* Expand Button */}
+                                        <button
+                                          onClick={() => toggleSectionExpansion('opening')}
+                                          className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-full p-1.5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 group"
+                                          title={expandedSections['opening'] ? "Collapse" : "Expand"}
+                                        >
+                                          {expandedSections['opening'] ? (
+                                            <ChevronUp className="h-3 w-3 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                                          ) : (
+                                            <ChevronDown className="h-3 w-3 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                                          )}
+                                        </button>
+                                      </div>
+                                      
+                                      {sectionAnalysis.opening?.issues && sectionAnalysis.opening.issues.length > 0 && (
+                                        <div className="space-y-1 mb-3">
+                                          <p className="text-xs font-medium text-red-600">Issues to fix:</p>
+                                          {sectionAnalysis.opening.issues.map((issue, index) => (
+                                            <p key={index} className="text-xs text-red-600 flex items-center">
+                                              <span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
+                                              {issue}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          setCurrentSection('opening');
+                                          improveSection('opening', 'impactful');
+                                        }}
+                                        disabled={isImproving && currentSection === 'opening'}
+                                        className="w-full px-3 py-2 bg-blue-50 text-blue-700 text-sm rounded hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center border border-blue-200"
+                                      >
+                                        {isImproving && currentSection === 'opening' ? (
+                                          <>
+                                            <Loader className="h-4 w-4 animate-spin mr-2" />
+                                            Improving...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Lightbulb className="h-4 w-4 mr-2" />
+                                            Improve Opening
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+
+                                    {/* Body Section */}
+                                    <div className="border border-gray-200 rounded-lg p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium text-gray-800">Body Paragraphs</h5>
+                                        <div className="flex items-center">
+                                          <div className={`w-3 h-3 rounded-full mr-2 ${
+                                            (sectionAnalysis.body?.score || 0) >= 80 ? 'bg-green-500' :
+                                            (sectionAnalysis.body?.score || 0) >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                          }`}></div>
+                                          <span className="text-sm font-medium text-gray-600">
+                                            {sectionAnalysis.body?.score || 0}/100
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Editable Body Section */}
+                                      <div className="relative mb-3">
+                                        <textarea
+                                          value={editableSections.body || getSectionText('body', editableCoverLetter)}
+                                          onChange={(e) => setEditableSections(prev => ({ ...prev, body: e.target.value }))}
+                                          className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-300"
+                                          placeholder="Body paragraphs content..."
+                                          style={{
+                                            height: getTextareaHeight(
+                                              editableSections.body || getSectionText('body', editableCoverLetter),
+                                              expandedSections['body']
+                                            ),
+                                            maxHeight: expandedSections['body'] ? '40vh' : '300px',
+                                            overflowY: 'auto'
+                                          }}
+                                        />
+                                        
+                                        {/* Expand Button */}
+                                        <button
+                                          onClick={() => toggleSectionExpansion('body')}
+                                          className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-full p-1.5 shadow-sm hover:shadow-md hover:border-green-300 transition-all duration-200 group"
+                                          title={expandedSections['body'] ? "Collapse" : "Expand"}
+                                        >
+                                          {expandedSections['body'] ? (
+                                            <ChevronUp className="h-3 w-3 text-gray-600 group-hover:text-green-600 transition-colors" />
+                                          ) : (
+                                            <ChevronDown className="h-3 w-3 text-gray-600 group-hover:text-green-600 transition-colors" />
+                                          )}
+                                        </button>
+                                      </div>
+                                      
+                                      {sectionAnalysis.body?.issues && sectionAnalysis.body.issues.length > 0 && (
+                                        <div className="space-y-1 mb-3">
+                                          <p className="text-xs font-medium text-red-600">Issues to fix:</p>
+                                          {sectionAnalysis.body.issues.map((issue, index) => (
+                                            <p key={index} className="text-xs text-red-600 flex items-center">
+                                              <span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
+                                              {issue}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          setCurrentSection('body');
+                                          improveSection('body', 'professional');
+                                        }}
+                                        disabled={isImproving && currentSection === 'body'}
+                                        className="w-full px-3 py-2 bg-green-50 text-green-700 text-sm rounded hover:bg-green-100 disabled:opacity-50 flex items-center justify-center border border-green-200"
+                                      >
+                                        {isImproving && currentSection === 'body' ? (
+                                          <>
+                                            <Loader className="h-4 w-4 animate-spin mr-2" />
+                                            Improving...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Award className="h-4 w-4 mr-2" />
+                                            Strengthen Body
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+
+                                    {/* Closing Section */}
+                                    <div className="border border-gray-200 rounded-lg p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium text-gray-800">Closing Paragraph</h5>
+                                        <div className="flex items-center">
+                                          <div className={`w-3 h-3 rounded-full mr-2 ${
+                                            (sectionAnalysis.closing?.score || 0) >= 80 ? 'bg-green-500' :
+                                            (sectionAnalysis.closing?.score || 0) >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                          }`}></div>
+                                          <span className="text-sm font-medium text-gray-600">
+                                            {sectionAnalysis.closing?.score || 0}/100
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Editable Closing Section */}
+                                      <div className="relative mb-3">
+                                        <textarea
+                                          value={editableSections.closing || getSectionText('closing', editableCoverLetter)}
+                                          onChange={(e) => setEditableSections(prev => ({ ...prev, closing: e.target.value }))}
+                                          className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 leading-relaxed focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-all duration-300"
+                                          placeholder="Closing paragraph content..."
+                                          style={{
+                                            height: getTextareaHeight(
+                                              editableSections.closing || getSectionText('closing', editableCoverLetter),
+                                              expandedSections['closing']
+                                            ),
+                                            maxHeight: expandedSections['closing'] ? '40vh' : '300px',
+                                            overflowY: 'auto'
+                                          }}
+                                        />
+                                        
+                                        {/* Expand Button */}
+                                        <button
+                                          onClick={() => toggleSectionExpansion('closing')}
+                                          className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-full p-1.5 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 group"
+                                          title={expandedSections['closing'] ? "Collapse" : "Expand"}
+                                        >
+                                          {expandedSections['closing'] ? (
+                                            <ChevronUp className="h-3 w-3 text-gray-600 group-hover:text-purple-600 transition-colors" />
+                                          ) : (
+                                            <ChevronDown className="h-3 w-3 text-gray-600 group-hover:text-purple-600 transition-colors" />
+                                          )}
+                                        </button>
+                                      </div>
+                                      
+                                      {sectionAnalysis.closing?.issues && sectionAnalysis.closing.issues.length > 0 && (
+                                        <div className="space-y-1 mb-3">
+                                          <p className="text-xs font-medium text-red-600">Issues to fix:</p>
+                                          {sectionAnalysis.closing.issues.map((issue, index) => (
+                                            <p key={index} className="text-xs text-red-600 flex items-center">
+                                              <span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
+                                              {issue}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          setCurrentSection('closing');
+                                          improveSection('closing', 'enthusiastic');
+                                        }}
+                                        disabled={isImproving && currentSection === 'closing'}
+                                        className="w-full px-3 py-2 bg-purple-50 text-purple-700 text-sm rounded hover:bg-purple-100 disabled:opacity-50 flex items-center justify-center border border-purple-200"
+                                      >
+                                        {isImproving && currentSection === 'closing' ? (
+                                          <>
+                                            <Loader className="h-4 w-4 animate-spin mr-2" />
+                                            Improving...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Zap className="h-4 w-4 mr-2" />
+                                            Enhance Closing
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* AI Improvements Preview */}
+                                  <div className="space-y-6">
+                                    <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                                      <Sparkles className="h-5 w-5 text-indigo-600 mr-2" />
+                                      AI Improvements
+                                    </h4>
+
+                                    {Object.keys(sectionImprovements).length === 0 ? (
+                                      <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                                        <div className="text-gray-400 mb-4">
+                                          <Lightbulb className="h-12 w-12 mx-auto mb-2" />
+                                        </div>
+                                        <p className="text-gray-500 mb-2">No improvements generated yet</p>
+                                        <p className="text-sm text-gray-400">Click on the improvement buttons to see AI suggestions</p>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-4">
+                                        {Object.entries(sectionImprovements).map(([section, improvement]) => (
+                                          <div key={section} className="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <h5 className="font-medium text-indigo-800 capitalize">
+                                                Improved {section}
+                                              </h5>
+                                              <span className="px-2 py-1 bg-indigo-100 text-indigo-600 text-xs rounded-full">
+                                                ✨ AI Generated
+                                              </span>
+                                            </div>
+                                            <div className="bg-white border border-indigo-200 rounded p-3 mb-3 text-sm text-gray-700 max-h-32 overflow-y-auto">
+                                              {improvement}
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                              <button
+                                                onClick={() => applySectionImprovement(section, improvement)}
+                                                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 flex items-center transition-colors"
+                                              >
+                                                <Check className="h-4 w-4 mr-2" />
+                                                Apply This
+                                              </button>
+                                              <button
+                                                onClick={() => {
+                                                  setCurrentSection(section);
+                                                  improveSection(section, 'professional');
+                                                }}
+                                                className="px-4 py-2 border border-indigo-300 text-indigo-600 text-sm rounded-lg hover:bg-indigo-50 flex items-center transition-colors"
+                                              >
+                                                <RefreshCw className="h-4 w-4 mr-2" />
+                                                Try Different Style
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-8">
+                                  <div className="flex items-center text-sm text-gray-500">
+                                    <span className="mr-2">💡</span>
+                                    <span>Improvements are applied automatically. Use Ctrl+Z to undo changes.</span>
+                                  </div>
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      onClick={() => {
+                                        setSectionImprovements({});
+                                        setCurrentSection('');
+                                        setShowQuickActionsModal(false);
+                                      }}
+                                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                    >
+                                      Done
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )}
 
+                        {/* Quick Actions Panel - REMOVED */}
+                        {/* The old quick actions panel has been replaced by the enhanced modal above */}
+
                         {/* Editable textarea */}
-                        <textarea
-                          ref={textareaRef}
-                          value={editableCoverLetter}
-                          onChange={(e) => handleCoverLetterEdit(e.target.value)}
-                          onSelect={handleTextSelection}
-                          className="w-full h-[400px] p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                          placeholder="Your generated cover letter will appear here for editing..."
-                          style={{
-                            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                            whiteSpace: 'pre-wrap',
-                            wordWrap: 'break-word'
-                          }}
-                          spellCheck={true}
-                        />
+                        <div className="relative">
+                          <textarea
+                            ref={textareaRef}
+                            value={editableCoverLetter}
+                            onChange={(e) => handleCoverLetterEdit(e.target.value)}
+                            onSelect={handleTextSelection}
+                            className="w-full p-4 border border-gray-200 rounded-lg resize-none text-gray-700 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300"
+                            placeholder="Your generated cover letter will appear here for editing..."
+                            style={{
+                              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                              whiteSpace: 'pre-wrap',
+                              wordWrap: 'break-word',
+                              height: mainTextareaExpanded ? getFullContentHeight(editableCoverLetter) : getTextareaHeight(editableCoverLetter, false),
+                              maxHeight: mainTextareaExpanded ? '80vh' : '500px',
+                              overflowY: 'auto'
+                            }}
+                            spellCheck={true}
+                          />
+                          
+                          {/* Expand/Collapse Button */}
+                          <button
+                            onClick={() => setMainTextareaExpanded(!mainTextareaExpanded)}
+                            className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-full p-2 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 group"
+                            title={mainTextareaExpanded ? "Collapse textarea" : "Expand textarea"}
+                          >
+                            {mainTextareaExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+                            )}
+                          </button>
+                        </div>
 
                         {/* Helper text */}
                         <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
@@ -1543,113 +2115,198 @@ John Smith`;
                           )}
                         </div>
 
-                        {/* AI Improvement Options Panel */}
+                        {/* Enhanced AI Improvement Options Panel */}
                         {showImprovementOptions && (
-                          <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
-                            <div className="flex items-center mb-3">
-                              <Sparkles className="h-4 w-4 text-indigo-600 mr-2" />
-                              <h4 className="text-sm font-medium text-indigo-900">
-                                Improve Selected Text
-                              </h4>
-                              <button
-                                onClick={() => setShowImprovementOptions(false)}
-                                className="ml-auto text-gray-400 hover:text-gray-600"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-
-                            <div className="text-xs text-indigo-700 mb-3 bg-indigo-100 p-2 rounded">
-                              "{selectedText.substring(0, 100)}{selectedText.length > 100 ? '...' : ''}"
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                              <button
-                                onClick={() => improveText('professional')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200 disabled:opacity-50 flex items-center justify-center"
-                              >
-                                <Lightbulb className="h-3 w-3 mr-1" />
-                                More Professional
-                              </button>
-                              <button
-                                onClick={() => improveText('enthusiastic')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-green-100 text-green-700 text-xs rounded hover:bg-green-200 disabled:opacity-50 flex items-center justify-center"
-                              >
-                                <Zap className="h-3 w-3 mr-1" />
-                                More Enthusiastic
-                              </button>
-                              <button
-                                onClick={() => improveText('concise')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-orange-100 text-orange-700 text-xs rounded hover:bg-orange-200 disabled:opacity-50 flex items-center justify-center"
-                              >
-                                <AlignLeft className="h-3 w-3 mr-1" />
-                                More Concise
-                              </button>
-                              <button
-                                onClick={() => improveText('impactful')}
-                                disabled={isImproving}
-                                className="px-3 py-2 bg-purple-100 text-purple-700 text-xs rounded hover:bg-purple-200 disabled:opacity-50 flex items-center justify-center"
-                              >
-                                <Award className="h-3 w-3 mr-1" />
-                                More Impactful
-                              </button>
-                            </div>
-
-                            {isImproving && (
-                              <div className="flex items-center justify-center py-4">
-                                <Loader className="h-4 animate-spin mr-2 text-indigo-600" />
-                                <span className="text-sm text-indigo-600">Generating improvements...</span>
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                              {/* Header */}
+                              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                <div className="flex items-center">
+                                  <div className="relative">
+                                    <Sparkles className="h-6 w-6 text-indigo-600 mr-3" />
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full animate-ping"></div>
+                                  </div>
+                                  <div>
+                                    <h3 className="text-xl font-semibold text-gray-900">AI Writing Assistant</h3>
+                                    <p className="text-sm text-gray-500">Improve your selected text with AI suggestions</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => setShowImprovementOptions(false)}
+                                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  <X className="h-6 w-6" />
+                                </button>
                               </div>
-                            )}
 
-                            {improvementSuggestions.length > 0 && (
-                              <div className="space-y-2">
-                                <h5 className="text-xs font-medium text-gray-700 mb-2">Choose an improvement:</h5>
-                                {improvementSuggestions.map((suggestion, index) => (
-                                  <div key={index} className="bg-white p-3 rounded border border-gray-200 hover:border-indigo-300 transition-colors">
-                                    <p className="text-sm text-gray-700 mb-2">{suggestion}</p>
+                              {/* Content */}
+                              <div className="p-6">
+                                {/* Before/After Comparison */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                  {/* Original Text */}
+                                  <div className="space-y-3">
+                                    <div className="flex items-center">
+                                      <div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                                      <h4 className="font-medium text-gray-700">Original Text</h4>
+                                    </div>
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[120px]">
+                                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                        {selectedText}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center text-xs text-gray-500">
+                                      <span>{selectedText.split(' ').length} words</span>
+                                      <span className="mx-2">•</span>
+                                      <span>{selectedText.length} characters</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Improved Text Preview */}
+                                  <div className="space-y-3">
+                                    <div className="flex items-center">
+                                      <div className="w-3 h-3 bg-indigo-500 rounded-full mr-2 animate-pulse"></div>
+                                      <h4 className="font-medium text-indigo-700">AI Improved Version</h4>
+                                      {improvementSuggestions.length > 0 && (
+                                        <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-600 text-xs rounded-full">
+                                          {improvementSuggestions.length} suggestions
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 min-h-[120px]">
+                                      {isImproving ? (
+                                        <div className="flex items-center justify-center h-24">
+                                          <Loader className="h-6 w-6 animate-spin text-indigo-600 mr-3" />
+                                          <span className="text-indigo-600 font-medium">Generating improvements...</span>
+                                        </div>
+                                      ) : improvementSuggestions.length > 0 ? (
+                                        <div className="space-y-3">
+                                          {improvementSuggestions.map((suggestion, index) => (
+                                            <div key={index} className="bg-white border border-indigo-200 rounded-lg p-3 hover:border-indigo-300 transition-colors">
+                                              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mb-3">
+                                                {suggestion}
+                                              </p>
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center text-xs text-gray-500">
+                                                  <span>{suggestion.split(' ').length} words</span>
+                                                  <span className="mx-2">•</span>
+                                                  <span>{suggestion.length} characters</span>
+                                                  {suggestion.split(' ').length !== selectedText.split(' ').length && (
+                                                    <>
+                                                      <span className="mx-2">•</span>
+                                                      <span className={suggestion.split(' ').length > selectedText.split(' ').length ? 'text-orange-600' : 'text-green-600'}>
+                                                        {suggestion.split(' ').length > selectedText.split(' ').length ? '+' : ''}
+                                                        {suggestion.split(' ').length - selectedText.split(' ').length} words
+                                                      </span>
+                                                    </>
+                                                  )}
+                                                </div>
+                                                <button
+                                                  onClick={() => replaceWithImprovement(suggestion)}
+                                                  className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 flex items-center transition-colors"
+                                                >
+                                                  <Check className="h-4 w-4 mr-2" />
+                                                  Apply This
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center justify-center h-24 text-gray-400">
+                                          <p>Choose an improvement style below to see suggestions</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Improvement Style Options */}
+                                <div className="space-y-4">
+                                  <h4 className="font-medium text-gray-900 flex items-center">
+                                    <Zap className="h-5 w-5 text-indigo-600 mr-2" />
+                                    Choose Improvement Style
+                                  </h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                     <button
-                                      onClick={() => replaceWithImprovement(suggestion)}
-                                      className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 flex items-center"
+                                      onClick={() => improveText('professional')}
+                                      disabled={isImproving}
+                                      className="group p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
                                     >
-                                      <Check className="h-3 w-3 mr-1" />
-                                      Use This
+                                      <div className="flex items-center mb-2">
+                                        <Lightbulb className="h-5 w-5 text-blue-600 mr-2 group-hover:scale-110 transition-transform" />
+                                        <span className="font-medium text-blue-800">Professional</span>
+                                      </div>
+                                      <p className="text-xs text-blue-600">More formal, structured, and business-appropriate language</p>
+                                    </button>
+
+                                    <button
+                                      onClick={() => improveText('enthusiastic')}
+                                      disabled={isImproving}
+                                      className="group p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                    >
+                                      <div className="flex items-center mb-2">
+                                        <Zap className="h-5 w-5 text-green-600 mr-2 group-hover:scale-110 transition-transform" />
+                                        <span className="font-medium text-green-800">Enthusiastic</span>
+                                      </div>
+                                      <p className="text-xs text-green-600">More energetic, passionate, and engaging tone</p>
+                                    </button>
+
+                                    <button
+                                      onClick={() => improveText('concise')}
+                                      disabled={isImproving}
+                                      className="group p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                    >
+                                      <div className="flex items-center mb-2">
+                                        <AlignLeft className="h-5 w-5 text-orange-600 mr-2 group-hover:scale-110 transition-transform" />
+                                        <span className="font-medium text-orange-800">Concise</span>
+                                      </div>
+                                      <p className="text-xs text-orange-600">Shorter, more direct, and to-the-point</p>
+                                    </button>
+
+                                    <button
+                                      onClick={() => improveText('impactful')}
+                                      disabled={isImproving}
+                                      className="group p-4 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                    >
+                                      <div className="flex items-center mb-2">
+                                        <Award className="h-5 w-5 text-purple-600 mr-2 group-hover:scale-110 transition-transform" />
+                                        <span className="font-medium text-purple-800">Impactful</span>
+                                      </div>
+                                      <p className="text-xs text-purple-600">More compelling, persuasive, and memorable</p>
                                     </button>
                                   </div>
-                                ))}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-6">
+                                  <div className="flex items-center text-sm text-gray-500">
+                                    <span className="mr-2">💡</span>
+                                    <span>Tip: You can always undo changes with Ctrl+Z</span>
+                                  </div>
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      onClick={() => setShowImprovementOptions(false)}
+                                      className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                    {improvementSuggestions.length > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          setImprovementSuggestions([]);
+                                          setShowImprovementOptions(false);
+                                        }}
+                                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                      >
+                                        Done
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            )}
+                            </div>
                           </div>
                         )}
-
-                        <div className="mt-4 flex justify-between items-center">
-                          <button
-                            className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
-                            onClick={handleReset}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Reset
-                          </button>
-                          <div className="flex space-x-3">
-                            <button
-                              onClick={handleCopy}
-                              className="px-3 py-1 text-sm border border-gray-200 rounded hover:border-gray-300 text-gray-600 flex items-center"
-                            >
-                              {copySuccess ? <Check className="h-4 w-4 mr-1 text-green-500" /> : <Copy className="h-4 w-4 mr-1" />}
-                              {copySuccess ? "Copied!" : "Copy"}
-                            </button>
-                            <button
-                              onClick={handleDownload}
-                              className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download {outputFormat.toUpperCase()}
-                            </button>
-                          </div>
-                        </div>
                       </>
                     ) : (
                       <div className="space-y-6">
