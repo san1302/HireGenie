@@ -1,0 +1,132 @@
+/* ========================================
+   Two-Breakpoint Responsive System
+   Mobile: < 768px | Desktop: ≥ 768px
+   ======================================== */
+
+/* Base responsive utilities */
+.responsive-wrapper {
+  width: 100%;
+}
+
+.responsive-wrapper.mobile {
+  /* Mobile-specific base styles */
+}
+
+.responsive-wrapper.desktop {
+  /* Desktop-specific base styles */
+}
+
+/* Show/Hide utilities */
+.mobile-only {
+  display: block;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+  
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+/* Container utilities */
+.container-responsive {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Common responsive patterns */
+.mobile-padding {
+  padding: 0.75rem; /* 12px */
+}
+
+.desktop-padding {
+  padding: 1rem; /* 16px */
+}
+
+@media (min-width: 768px) {
+  .mobile-padding {
+    padding: 1.5rem; /* 24px */
+  }
+  
+  .desktop-padding {
+    padding: 2rem; /* 32px */
+  }
+}
+
+/* Touch-friendly sizing for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-feedback:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease-out;
+}
+
+/* Mobile-optimized spacing */
+.mobile-spacing > * + * {
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .mobile-spacing > * + * {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Mobile stack, desktop flex */
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .mobile-stack {
+    flex-direction: row;
+    gap: 2rem;
+  }
+}
+
+/* Text size adjustments */
+.responsive-text {
+  font-size: 0.875rem; /* 14px mobile */
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .responsive-text {
+    font-size: 1rem; /* 16px desktop */
+  }
+}
+
+.responsive-heading {
+  font-size: 1.25rem; /* 20px mobile */
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .responsive-heading {
+    font-size: 1.5rem; /* 24px desktop */
+  }
+} 

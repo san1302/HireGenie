@@ -30,6 +30,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { useToast } from "./ui/use-toast";
+import { useResponsive } from "@/hooks/useResponsive";
 
 // Import modular components and types
 import {
@@ -99,7 +100,9 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   
   // Mobile state
   const [mobileStep, setMobileStep] = useState<MobileStep>('resume');
-  const [showMobileWizard, setShowMobileWizard] = useState(false);
+  
+  // Mobile results tab state (separate from ActiveTab which is for upload/paste)
+  const [mobileResultsTab, setMobileResultsTab] = useState<'letter' | 'ats' | 'actions'>('letter');
   
   // AI Assistant state
   const [selectedText, setSelectedText] = useState("");
@@ -152,6 +155,9 @@ export default function CoverLetterGenerator({ userUsage, hasActiveSubscription 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [lastAnalyzedContent, setLastAnalyzedContent] = useState<string>(''); // Track content for re-analysis
   const [aiAnalysisResult, setAiAnalysisResult] = useState<AIAnalysisResponse | null>(null);
+
+  // Get responsive state using the new hook
+  const { isMobile } = useResponsive();
 
   // Sample cover letter for fallback
   const sampleCoverLetter = `Dear Hiring Manager,
@@ -621,7 +627,6 @@ John Smith`;
       }
       
       setGenerationStep('complete');
-      setShowMobileWizard(false);
       
       toast({
         title: "Analysis complete!",
@@ -884,17 +889,6 @@ John Smith`;
     }
   };
 
-  // Screen size detection
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setShowMobileWizard(window.innerWidth < 768);
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
   // Update section analysis when cover letter changes
   useEffect(() => {
     if (editableCoverLetter.trim()) {
@@ -1028,7 +1022,7 @@ John Smith`;
                     </div>
 
         {/* Conditional Rendering: Mobile Wizard vs Desktop Layout */}
-        {showMobileWizard ? (
+        {isMobile ? (
           <>
             {/* Mobile Wizard */}
             {isLocked && (
@@ -1090,13 +1084,8 @@ John Smith`;
             {/* Mobile Results */}
             {(coverLetter || isGenerating) && (
               <div className="mt-6 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <FileText className="h-5 w-5 mr-2 text-indigo-600" />
-                    Your Cover Letter
-                  </h3>
-                  
-                  {isGenerating ? (
+                {isGenerating ? (
+                  <div className="p-6">
                     <div className="text-center py-8">
                       <Loader className="h-8 w-8 text-indigo-600 mx-auto mb-4 animate-spin" />
                       <h4 className="text-base font-medium text-gray-900 mb-2">
@@ -1112,107 +1101,396 @@ John Smith`;
                           'w-full bg-green-500'
                         }`}></div>
                       </div>
-                      </div>
-                  ) : (
-                    <>
-                      <div className="relative mb-4">
-                      <textarea
-                          ref={textareaRef}
-                        value={editableCoverLetter}
-                        onChange={(e) => handleCoverLetterEdit(e.target.value)}
-                          onSelect={handleTextSelection}
-                          className="w-full p-4 border border-gray-200 rounded-lg text-gray-700 leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-300"
-                          style={{
-                            height: mainTextareaExpanded ? getFullContentHeight(editableCoverLetter) : getTextareaHeight(editableCoverLetter, false),
-                            maxHeight: mainTextareaExpanded ? '80vh' : '500px',
-                            overflowY: 'auto',
-                            whiteSpace: 'pre-wrap',
-                            wordWrap: 'break-word',
-                            fontFamily: 'ui-sans-serif, system-ui, sans-serif'
-                          }}
-                        placeholder="Your generated cover letter will appear here..."
-                          spellCheck={true}
-                        />
-                        
-                        {/* Expand/Collapse Button */}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile Tab Navigation */}
+                    <div className="border-b border-gray-200 bg-gray-50">
+                      <div className="flex">
                         <button
-                          onClick={() => setMainTextareaExpanded(!mainTextareaExpanded)}
-                          className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-full p-2 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 group"
-                          title={mainTextareaExpanded ? "Collapse textarea" : "Expand textarea"}
+                          onClick={() => setMobileResultsTab('letter')}
+                          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            mobileResultsTab === 'letter'
+                              ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
                         >
-                          {mainTextareaExpanded ? (
-                            <ChevronUp className="h-4 w-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
-                          )}
+                          <FileText className="h-4 w-4 mx-auto mb-1" />
+                          Letter
+                        </button>
+                        <button
+                          onClick={() => setMobileResultsTab('ats')}
+                          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            mobileResultsTab === 'ats'
+                              ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          <Target className="h-4 w-4 mx-auto mb-1" />
+                          ATS Score
+                        </button>
+                        <button
+                          onClick={() => setMobileResultsTab('actions')}
+                          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            mobileResultsTab === 'actions'
+                              ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          <Download className="h-4 w-4 mx-auto mb-1" />
+                          Actions
                         </button>
                       </div>
-
-                      {/* Helper text */}
-                      <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
-                        <span>
-                          💡 Tip: Select text to improve it with AI • Use Ctrl+Z to undo, Ctrl+Y to redo • Changes are auto-saved
-                        </span>
-                        {editHistory.length > 1 && (
-                          <span className="text-indigo-500">
-                            {editHistory.length} versions in history
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Inline Text Selection Improvement */}
-                      <TextSelectionPopover
-                        selectedText={textSelectionPopover.selectedText}
-                        isImproving={isImproving}
-                        improvementSuggestions={improvementSuggestions}
-                        isVisible={textSelectionPopover.isVisible}
-                        onImprove={handlePopoverImprove}
-                        onApply={handlePopoverApply}
-                        onClose={handlePopoverClose}
-                      />
-                      
-                      <div className="mt-4 flex flex-col gap-3">
-                        <div className="flex justify-between text-sm text-gray-500">
-                          <span>{getWordCount(editableCoverLetter)} words</span>
-                          <span className={getLengthStatus(getWordCount(editableCoverLetter)).color}>
-                            {getLengthStatus(getWordCount(editableCoverLetter)).message}
-                          </span>
                     </div>
 
-                        <div className="mt-4 flex justify-between items-center">
-                          <button
-                            className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
-                            onClick={handleReset}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Reset
-                          </button>
-                          <div className="flex space-x-3">
-                          <button 
-                            onClick={handleCopy} 
-                              className={`px-3 py-1 text-sm border rounded hover:border-gray-300 flex items-center transition-colors ${copySuccess 
-                                ? 'border-green-300 text-green-600 bg-green-50' 
-                                : 'border-gray-200 text-gray-600'
-                              }`}
-                          >
-                              {copySuccess ? <Check className="h-4 w-4 mr-1 text-green-500" /> : <Copy className="h-4 w-4 mr-1" />}
-                              {copySuccess ? "Copied!" : "Copy"}
-                          </button>
-                          <button 
-                            onClick={handleDownload} 
-                              className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center transition-colors"
-                          >
-                              <Download className="h-4 w-4 mr-1" />
-                            Download {outputFormat.toUpperCase()}
-                          </button>
+                    {/* Tab Content */}
+                    <div className="p-4">
+                      {/* Letter Tab */}
+                      {mobileResultsTab === 'letter' && (
+                        <div>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                              <FileText className="h-5 w-5 mr-2 text-indigo-600" />
+                              Your Cover Letter
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              {/* Word Count */}
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                getLengthStatus(wordCount).message === 'Concise' || getLengthStatus(wordCount).message === 'Standard' ? 'bg-green-100 text-green-700' :
+                                getLengthStatus(wordCount).message === 'Too short' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {wordCount} words
+                              </span>
+                              {/* Undo/Redo */}
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={undo}
+                                  disabled={!canUndo}
+                                  className="p-1.5 rounded-lg bg-gray-100 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
+                                  title="Undo (Ctrl+Z)"
+                                >
+                                  <Undo2 className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={redo}
+                                  disabled={!canRedo}
+                                  className="p-1.5 rounded-lg bg-gray-100 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
+                                  title="Redo (Ctrl+Y)"
+                                >
+                                  <Redo2 className="h-3 w-3" />
+                                </button>
+                              </div>
                             </div>
-                        </div>
                           </div>
-                    </>
-                  )}
-                        </div>
+
+                          <div className="relative">
+                            <textarea
+                              ref={textareaRef}
+                              value={editableCoverLetter}
+                              onChange={(e) => handleCoverLetterEdit(e.target.value)}
+                              onSelect={handleTextSelection}
+                              className="w-full p-4 border border-gray-200 rounded-lg text-gray-700 leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-300"
+                              style={{
+                                height: mainTextareaExpanded ? getFullContentHeight(editableCoverLetter) : getTextareaHeight(editableCoverLetter, false),
+                                maxHeight: mainTextareaExpanded ? '70vh' : '400px',
+                                overflowY: 'auto',
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word',
+                                fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                                fontSize: '16px', // Prevent zoom on iOS
+                                lineHeight: '1.6'
+                              }}
+                              placeholder="Your generated cover letter will appear here..."
+                              spellCheck={true}
+                            />
+                            
+                            {/* Expand/Collapse Button */}
+                            <button
+                              onClick={() => setMainTextareaExpanded(!mainTextareaExpanded)}
+                              className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-full p-2 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 group"
+                              title={mainTextareaExpanded ? "Collapse textarea" : "Expand textarea"}
+                            >
+                              {mainTextareaExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Enhanced Mobile AI Assistant */}
+                          {selectedText && (
+                            <div className="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl overflow-hidden">
+                              {/* Header */}
+                              <div className="flex items-center justify-between p-3 bg-white/50 border-b border-indigo-200">
+                                <div className="flex items-center">
+                                  <div className="relative">
+                                    <Sparkles className="h-4 w-4 text-indigo-600 mr-2 animate-pulse" />
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>
+                                  </div>
+                                  <span className="text-sm font-medium text-indigo-900">AI Assistant</span>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedText('')}
+                                  className="p-1 rounded-full hover:bg-indigo-100 transition-colors"
+                                >
+                                  <X className="h-4 w-4 text-indigo-600" />
+                                </button>
+                              </div>
+
+                              {/* Selected Text Preview */}
+                              <div className="p-3 bg-white/30">
+                                <div className="text-xs text-indigo-700 mb-1 font-medium">Selected Text:</div>
+                                <div className="text-sm text-indigo-900 bg-white/60 rounded-lg p-2 border border-indigo-200">
+                                  "{selectedText.length > 100 ? selectedText.substring(0, 100) + '...' : selectedText}"
+                                </div>
+                              </div>
+
+                              {/* Improvement Options */}
+                              <div className="p-3">
+                                <div className="text-xs text-indigo-700 mb-2 font-medium">Choose Improvement Style:</div>
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                  <button
+                                    onClick={() => improveText('professional')}
+                                    disabled={isImproving}
+                                    className="flex items-center justify-center px-3 py-2.5 bg-white border border-indigo-200 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isImproving ? (
+                                      <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : (
+                                      <Lightbulb className="h-3 w-3 mr-1" />
+                                    )}
+                                    Professional
+                                  </button>
+                                  <button
+                                    onClick={() => improveText('concise')}
+                                    disabled={isImproving}
+                                    className="flex items-center justify-center px-3 py-2.5 bg-white border border-indigo-200 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isImproving ? (
+                                      <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : (
+                                      <Zap className="h-3 w-3 mr-1" />
+                                    )}
+                                    Concise
+                                  </button>
+                                  <button
+                                    onClick={() => improveText('engaging')}
+                                    disabled={isImproving}
+                                    className="flex items-center justify-center px-3 py-2.5 bg-white border border-indigo-200 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isImproving ? (
+                                      <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : (
+                                      <TrendingUp className="h-3 w-3 mr-1" />
+                                    )}
+                                    Engaging
+                                  </button>
+                                  <button
+                                    onClick={() => improveText('specific')}
+                                    disabled={isImproving}
+                                    className="flex items-center justify-center px-3 py-2.5 bg-white border border-indigo-200 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isImproving ? (
+                                      <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : (
+                                      <Target className="h-3 w-3 mr-1" />
+                                    )}
+                                    Specific
+                                  </button>
+                                </div>
+
+                                {/* Loading State */}
+                                {isImproving && (
+                                  <div className="text-center py-3">
+                                    <div className="flex items-center justify-center mb-2">
+                                      <Loader className="h-4 w-4 text-indigo-600 animate-spin mr-2" />
+                                      <span className="text-sm text-indigo-700">AI is analyzing your text...</span>
+                                    </div>
+                                    <div className="w-full bg-indigo-200 rounded-full h-1">
+                                      <div className="bg-indigo-600 h-1 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Improvement Suggestions */}
+                                {improvementSuggestions.length > 0 && !isImproving && (
+                                  <div className="space-y-2">
+                                    <div className="text-xs text-indigo-700 font-medium mb-2">AI Suggestions:</div>
+                                    {improvementSuggestions.map((suggestion, index) => (
+                                      <div key={index} className="bg-white border border-indigo-200 rounded-lg p-3">
+                                        <div className="text-sm text-gray-800 mb-2 leading-relaxed">
+                                          "{suggestion}"
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <div className="text-xs text-gray-500">
+                                            Option {index + 1} of {improvementSuggestions.length}
+                                          </div>
+                                          <button
+                                            onClick={() => replaceWithImprovement(suggestion)}
+                                            className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                                          >
+                                            Apply This
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <button
+                                      onClick={() => setImprovementSuggestions([])}
+                                      className="w-full py-2 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+                                    >
+                                      Clear Suggestions
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          )}
+
+                          {/* Mobile Quick Actions Button - REMOVED for mobile-only text selection */}
+                          {/* Keeping only text selection AI feature for mobile */}
+
+                          {/* Enhanced Helper Text */}
+                          <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                            <div className="text-xs text-blue-700 text-center space-y-1">
+                              <div className="font-medium">💡 Pro Tips for Mobile:</div>
+                              <div>• Double-tap a word to select it quickly</div>
+                              <div>• Tap and hold to select sentences or paragraphs</div>
+                              <div>• Use text selection for AI improvements</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ATS Score Tab */}
+                      {mobileResultsTab === 'ats' && (
+                        <div>
+                          <div className="text-center mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">ATS Compatibility Score</h3>
+                            {atsAnalysis ? (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-center">
+                                  <div className={`text-4xl font-bold ${getScoreColor(atsAnalysis.overallScore || 0)}`}>
+                                    {atsAnalysis.overallScore || 0}/100
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                    <div className="text-lg font-semibold text-gray-900">{atsAnalysis.breakdown?.keywordMatch || 0}%</div>
+                                    <div className="text-xs text-gray-600">Keyword Match</div>
+                                  </div>
+                                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                    <div className="text-lg font-semibold text-gray-900">{atsAnalysis.breakdown?.formatCompatibility || 0}%</div>
+                                    <div className="text-xs text-gray-600">Format Score</div>
+                                  </div>
+                                </div>
+                                {atsAnalysis.recommendations && atsAnalysis.recommendations.length > 0 && (
+                                  <div className="text-left">
+                                    <h4 className="font-medium text-gray-900 mb-2">Improvement Suggestions:</h4>
+                                    <ul className="space-y-1">
+                                      {atsAnalysis.recommendations.slice(0, 3).map((recommendation, index) => (
+                                        <li key={index} className="text-sm text-gray-600 flex items-start">
+                                          <span className="text-indigo-600 mr-2">•</span>
+                                          {recommendation.fix}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500">Generate a cover letter to see ATS analysis</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions Tab */}
+                      {mobileResultsTab === 'actions' && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+                          <div className="space-y-3">
+                            {/* Copy Button */}
+                            <button
+                              onClick={handleCopy}
+                              className="w-full flex items-center justify-center px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                            >
+                              {copySuccess ? (
+                                <>
+                                  <Check className="h-5 w-5 mr-2" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-5 w-5 mr-2" />
+                                  Copy to Clipboard
+                                </>
+                              )}
+                            </button>
+
+                            {/* Download Button */}
+                            <button
+                              onClick={handleDownload}
+                              className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                            >
+                              <Download className="h-5 w-5 mr-2" />
+                              Download as {outputFormat.toUpperCase()}
+                            </button>
+
+                            {/* Reset Button */}
+                            <button
+                              onClick={handleReset}
+                              className="w-full flex items-center justify-center px-4 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                            >
+                              <RefreshCw className="h-5 w-5 mr-2" />
+                              Start Over
+                            </button>
+
+                            {/* Stats */}
+                            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                              <h4 className="font-medium text-gray-900 mb-3">Letter Stats</h4>
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-600">Word Count:</span>
+                                  <span className="ml-2 font-medium">{wordCount}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Length:</span>
+                                  <span className={`ml-2 font-medium ${
+                                    getLengthStatus(wordCount).message === 'Concise' || getLengthStatus(wordCount).message === 'Standard' ? 'text-green-600' :
+                                    getLengthStatus(wordCount).message === 'Too short' ? 'text-yellow-600' :
+                                    'text-red-600'
+                                  }`}>
+                                    {getLengthStatus(wordCount).message === 'Concise' || getLengthStatus(wordCount).message === 'Standard' ? 'Optimal' :
+                                     getLengthStatus(wordCount).message === 'Too short' ? 'Too Short' : 'Too Long'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Tone:</span>
+                                  <span className="ml-2 font-medium">{tone}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Format:</span>
+                                  <span className="ml-2 font-medium">{outputFormat.toUpperCase()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
+
+            {/* Mobile Floating Action Button for AI Assistant - REMOVED */}
+            {/* Mobile now uses only text selection AI feature */}
           </>
         ) : (
           /* Desktop Layout - Original Structure */
@@ -1508,7 +1786,7 @@ John Smith`;
                             {/* Word Count & Status */}
                             <div className="text-xs text-gray-500 flex items-center space-x-2">
                               <span>{wordCount} words</span>
-                              <span className={lengthStatus.color}>• {lengthStatus.message}</span>
+                              <span className={getLengthStatus(wordCount).color}>• {getLengthStatus(wordCount).message}</span>
                             </div>
                           </div>
                         </div>
@@ -1778,25 +2056,30 @@ John Smith`;
                             )}
 
         {/* Modular Components */}
-        <QuickActionsModal
-          showQuickActionsModal={showQuickActionsModal}
-          sectionAnalysis={sectionAnalysis}
-          sectionImprovements={sectionImprovements}
-          isImproving={isImproving}
-          isAnalyzing={isAnalyzing}
-          currentSection={currentSection}
-          expandedSections={expandedSections}
-          editableSections={editableSections}
-          editableImprovements={editableImprovements}
-          editableCoverLetter={editableCoverLetter}
-          setShowQuickActionsModal={setShowQuickActionsModal}
-          improveSection={improveSection}
-          applySectionImprovement={applySectionImprovement}
-          getSectionText={(section: string, content: string) => getSectionTextAI(section, content, aiAnalysisResult || undefined)}
-          setExpandedSections={setExpandedSections}
-          setEditableSections={setEditableSections}
-          setEditableImprovements={setEditableImprovements}
-        />
+        {/* Old QuickActionsModal removed - using new simplified version below */}
+
+        {/* Quick Actions Modal - Desktop Only */}
+        {!isMobile && (
+          <QuickActionsModal
+            showQuickActionsModal={showQuickActionsModal}
+            sectionAnalysis={sectionAnalysis}
+            sectionImprovements={sectionImprovements}
+            isImproving={isImproving}
+            isAnalyzing={isAnalyzing}
+            currentSection={currentSection}
+            expandedSections={expandedSections}
+            editableSections={editableSections}
+            editableImprovements={editableImprovements}
+            editableCoverLetter={editableCoverLetter}
+            setShowQuickActionsModal={setShowQuickActionsModal}
+            improveSection={improveSection}
+            applySectionImprovement={applySectionImprovement}
+            getSectionText={(section: string, content: string) => getSectionText(section, content)}
+            setExpandedSections={setExpandedSections}
+            setEditableSections={setEditableSections}
+            setEditableImprovements={setEditableImprovements}
+          />
+        )}
       </div>
     </section>
   );

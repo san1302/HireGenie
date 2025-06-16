@@ -91,18 +91,14 @@ export default async function Pricing() {
                          style={{clipPath: "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"}}></div>
                 </div>
 
-                <div className="container mx-auto px-4 relative">
+                <div className="container-responsive mobile-padding mobile-spacing">
+                    {/* Header */}
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 text-sm font-medium mb-8">
-                            🚀 Live Pricing
-                        </div>
-                        <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-6">
+                        <h1 className="responsive-heading mb-6">
                             Choose Your Plan
                         </h1>
-                        <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                            {userSubscription 
-                                ? `You're currently on the ${userSubscription.planDetails?.planName || 'Pro'} plan` 
-                                : "Get started with our free plan or upgrade to unlock unlimited cover letters and premium features"}
+                        <p className="responsive-text text-gray-600 max-w-2xl mx-auto">
+                            Get started with our free plan or upgrade to Pro for unlimited access and advanced features.
                         </p>
                     </div>
 

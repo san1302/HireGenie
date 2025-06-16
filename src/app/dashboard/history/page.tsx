@@ -67,20 +67,20 @@ export default async function HistoryPage() {
     <SubscriptionCheck>
       <DashboardNavbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-        <div className="container mx-auto px-4 py-8 space-y-8">
+        <div className="container-responsive mobile-padding mobile-spacing">
           
           {/* Header Section */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="mobile-stack gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-full bg-gradient-to-r from-green-600 to-teal-600 flex items-center justify-center">
                   <FileText className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="responsive-heading">
                     Cover Letter History
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="responsive-text text-gray-600">
                     View and manage your generated cover letters
                   </p>
                 </div>

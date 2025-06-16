@@ -90,3 +90,6 @@
     animation: tilt 10s infinite linear;
   }
 }
+
+/* Import responsive utilities */
+@import '../styles/responsive.css';
