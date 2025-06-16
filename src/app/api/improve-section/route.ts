@@ -50,17 +50,17 @@ export async function POST(request: NextRequest) {
     const improvementPrompt = sectionPrompts[sectionKey][styleKey];
 
     // Create system prompt for section-specific improvement
-    const systemPrompt = `You are an expert career coach and professional writer specializing in cover letters. Your task is to improve a specific section of a cover letter while maintaining the overall flow and coherence of the document.
+    const systemPrompt = `You are an expert career coach and professional writer specializing in cover letters. Your task is to improve a specific section of a cover letter.
 
 ${improvementPrompt}
 
 Important guidelines:
 - Maintain the original meaning and key information
 - Keep the improved section proportional to the original length
-- Ensure the improved section flows naturally with the rest of the cover letter
 - Use language appropriate for the industry and role
 - Preserve any specific company names, job titles, or personal details mentioned
-- Return ONLY the complete improved cover letter, not just the section
+- Return ONLY the improved section content, not the entire cover letter
+- Focus specifically on the ${section} section
 
 The job description context: ${jobDescription || 'Professional role'}`;
 
@@ -69,7 +69,7 @@ The job description context: ${jobDescription || 'Professional role'}`;
 Original Cover Letter:
 ${coverLetter}
 
-Focus on improving the ${section} section specifically, but return the complete improved cover letter.`;
+Return ONLY the improved ${section} section content, not the full cover letter.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -84,7 +84,7 @@ Focus on improving the ${section} section specifically, but return the complete 
         },
       ],
       temperature: 0.7,
-      max_tokens: 1500, // Allow for full cover letter response
+      max_tokens: 800, // Reduced since we're only returning the section
     });
 
     const improvedText = response.choices[0]?.message?.content;
