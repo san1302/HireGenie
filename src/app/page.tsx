@@ -21,15 +21,15 @@ export default async function Home() {
       {/* Hero Section */}
       <Hero />
       {/* Features Section */}
-      <Features />
+      {/* <Features /> */}
       {/* How It Works */}
       <HowItWorks />
       {/* Coming Soon */}
-      <ComingSoon />
+      {/* <ComingSoon /> */}
       {/* Pricing Section */}
       <PricingServer />
       {/* Waitlist Form */}
-      <WaitlistForm />
+      {/* <WaitlistForm /> */}
       <Footer />
       <Toaster />
     </div>

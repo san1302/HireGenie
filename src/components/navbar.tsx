@@ -53,7 +53,7 @@ export default function Navbar() {
   };
 
   const navigationItems = [
-    { href: "#features", label: "Features" },
+    // { href: "#features", label: "Features" },
     { href: "#how-it-works", label: "How it Works" },
     { href: "#pricing", label: "Pricing" },
   ];

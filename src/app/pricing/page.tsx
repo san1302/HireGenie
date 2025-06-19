@@ -234,7 +234,7 @@ export default async function Pricing() {
                                 size="lg"
                                 className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-6 text-lg"
                             >
-                                <Link href="mailto:contact@hiregenie.io">Contact Sales</Link>
+                                <Link href="mailto:san@san-verse.com">Contact Sales</Link>
                             </Button>
                         </div>
                     </div>
