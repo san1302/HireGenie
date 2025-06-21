@@ -70,23 +70,27 @@ export default function DashboardNavbar() {
       if (user) {
         setUserEmail(user.email || '')
         
-        // Fetch subscription status
+        // Fetch subscription status - using same logic as dashboard page
         const { data: subscriptionData } = await supabase
-          .from('user_subscriptions')
-          .select('*')
+          .from('subscriptions')
+          .select('status')
           .eq('user_id', user.id)
-          .single()
+          .eq('status', 'active')
+          .maybeSingle()
 
         if (subscriptionData) {
           setUserSubscription({
-            hasActiveSubscription: subscriptionData.subscription_status === 'active',
+            hasActiveSubscription: true,
             planDetails: {
-              planName: subscriptionData.plan_name || 'Free'
+              planName: 'Pro'
             }
           })
         } else {
           setUserSubscription({
-            hasActiveSubscription: false
+            hasActiveSubscription: false,
+            planDetails: {
+              planName: 'Free'
+            }
           })
         }
       }
