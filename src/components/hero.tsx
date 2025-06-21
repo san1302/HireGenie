@@ -84,11 +84,11 @@ export default function Hero() {
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-70" />
 
-      <div className="relative pt-24 pb-20 sm:pt-32 sm:pb-32">
+      <div className="relative pt-16 pb-12 sm:pt-24 sm:pb-20 lg:pt-32 lg:pb-32">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
+          <div className="flex flex-col lg:flex-row items-center gap-8 sm:gap-12">
             <div className="flex-1 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
-              <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight leading-tight">
                 Beat ATS Filters –
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                   {" "}
@@ -97,20 +97,20 @@ export default function Hero() {
                 Interviews
               </h1>
 
-              <p className="text-xl text-gray-600 mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-lg sm:text-xl text-gray-600 mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 AI-powered cover letters with <strong>real-time ATS scoring</strong>. 
                 Know your exact chances before you apply.
               </p>
 
               {/* ATS Score Highlight */}
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-8 max-w-md mx-auto lg:mx-0">
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8 max-w-md mx-auto lg:mx-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Target className="h-5 w-5 text-blue-600 mr-2" />
+                    <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2" />
                     <span className="text-sm font-medium text-gray-700">Average ATS Score</span>
                   </div>
                   <div className="text-right">
-                    <div className={`text-2xl font-bold ${getScoreColor(atsScore)}`}>
+                    <div className={`text-xl sm:text-2xl font-bold ${getScoreColor(atsScore)}`}>
                       {atsScore}/100
                     </div>
                     <div className="text-xs text-gray-500">vs 62 industry avg</div>
@@ -118,43 +118,43 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center mb-8">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start items-center mb-6 sm:mb-8">
                 <Button
                   size="lg"
                   onClick={handleTryItNow}
                   disabled={isLoggedIn === null}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-medium disabled:opacity-50 transition-all duration-200"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg font-medium disabled:opacity-50 transition-all duration-200 min-h-[48px] touch-target"
                 >
                   {isLoggedIn === null ? 'Loading...' : 
                    isLoggedIn ? 'Go to Dashboard' : 'Check Your ATS Score Free'}
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
 
               {/* Trust Indicators */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 text-sm text-gray-600 mb-6">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 items-center justify-center lg:justify-start gap-3 sm:gap-6 text-sm text-gray-600 mb-4 sm:mb-6">
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                   <span>87% average ATS score</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                   <span>38 seconds to perfect</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                   <span>No credit card required</span>
                 </div>
               </div>
 
               {/* Live Activity Counter */}
-              <div className="flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:items-center justify-center lg:justify-start gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                <div className="flex items-center gap-2 justify-center lg:justify-start">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
                   <span>{recentActivity} cover letters generated in the last hour</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center gap-2 justify-center lg:justify-start">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                   <span>12,847+ job seekers trust us</span>
                 </div>
               </div>

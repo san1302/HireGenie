@@ -24,14 +24,14 @@ export default async function PricingServer() {
     if (error) {
         console.error("Error fetching plans:", error);
         return (
-            <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50">
+            <section className="py-16 sm:py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center">
-                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-red-100 text-red-600 text-sm font-medium mb-8">
+                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-red-100 text-red-600 text-sm font-medium mb-6 sm:mb-8">
                             ⚠️ Unable to Load Plans
                         </div>
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Pricing</h2>
-                        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Pricing</h2>
+                        <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
                             We're experiencing technical difficulties. Please try refreshing the page.
                         </p>
                     </div>
@@ -78,7 +78,7 @@ export default async function PricingServer() {
     const freeCardButton = getFreeCardButton();
 
     return (
-        <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
+        <section id="pricing" className="py-16 sm:py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
             {/* Background decoration */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             <div className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 blur-3xl xl:-top-6" aria-hidden="true">
@@ -87,25 +87,25 @@ export default async function PricingServer() {
             </div>
 
             <div className="container mx-auto px-4 relative">
-                <div className="text-center mb-16">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 text-sm font-medium mb-8">
+                <div className="text-center mb-12 sm:mb-16">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 text-sm font-medium mb-6 sm:mb-8">
                         🚀 Live Pricing
                     </div>
-                    <h2 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-6">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-4 sm:mb-6">
                         Choose Your Plan
                     </h2>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
                         {userSubscription 
                             ? `You're currently on the ${userSubscription.planDetails?.planName || 'Pro'} plan` 
                             : "Get started with our free plan or upgrade to unlock unlimited cover letters and premium features"}
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-stretch">
+                <div className="space-y-6 sm:space-y-8 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-8 max-w-7xl mx-auto items-stretch">
                     {/* Free Plan - Always first */}
                     <div className="group relative">
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-200 to-slate-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                        <div className="relative bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1 border border-gray-200 h-full flex flex-col">
+                        <div className="relative bg-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1 border border-gray-200 h-full flex flex-col">
                             {/* Current plan indicator */}
                             {user && !userSubscription && (
                                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
@@ -120,23 +120,23 @@ export default async function PricingServer() {
                             
                             <div className="relative z-10 flex flex-col h-full">
                                 {/* Header section - fixed height */}
-                                <div className="mb-8">
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Free</h3>
-                                    <div className="flex items-baseline mb-4">
-                                        <span className="text-5xl font-bold text-gray-900">$0</span>
-                                        <span className="text-gray-500 ml-2 text-lg">/forever</span>
+                                <div className="mb-6 sm:mb-8">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Free</h3>
+                                    <div className="flex items-baseline mb-3 sm:mb-4">
+                                        <span className="text-4xl sm:text-5xl font-bold text-gray-900">$0</span>
+                                        <span className="text-gray-500 ml-2 text-base sm:text-lg">/forever</span>
                                     </div>
-                                    <p className="text-gray-600 h-12 flex items-center">Perfect for occasional job seekers</p>
+                                    <p className="text-gray-600 text-sm sm:text-base">Perfect for occasional job seekers</p>
                                 </div>
                                 
                                 {/* Features section - flexible height */}
-                                <div className="border-t border-gray-100 pt-8 mb-8 flex-1">
-                                    <ul className="space-y-4">
+                                <div className="border-t border-gray-100 pt-6 sm:pt-8 mb-6 sm:mb-8 flex-1">
+                                    <ul className="space-y-3 sm:space-y-4">
                                         <li className="flex items-start gap-3">
                                             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
-                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                            <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
                                                 <span className="font-semibold">2 cover letters</span> per month
                                             </span>
                                         </li>
@@ -144,7 +144,7 @@ export default async function PricingServer() {
                                             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
-                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                            <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
                                                 <span className="font-semibold">Basic templates</span>
                                             </span>
                                         </li>
@@ -152,15 +152,16 @@ export default async function PricingServer() {
                                             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
-                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                            <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
                                                 <span className="font-semibold">Standard</span> export options
                                             </span>
                                         </li>
-                                        <li className="flex items-start gap-3">
+                                        {/* Show 4th feature only on sm+ screens */}
+                                        <li className="hidden sm:flex items-start gap-3">
                                             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
-                                            <span className="text-gray-700 font-medium leading-relaxed">
+                                            <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
                                                 <span className="font-semibold">Community</span> support
                                             </span>
                                         </li>
@@ -172,7 +173,7 @@ export default async function PricingServer() {
                                     <Button 
                                         asChild 
                                         size="lg"
-                                        className={`w-full font-semibold py-6 text-lg transition-all duration-200 ${
+                                        className={`w-full font-semibold py-4 sm:py-6 text-base sm:text-lg transition-all duration-200 min-h-[48px] touch-target ${
                                             freeCardButton.variant === "secondary" 
                                                 ? "bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 text-blue-700 border-0"
                                                 : "bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border-0"
