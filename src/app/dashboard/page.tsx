@@ -2,6 +2,7 @@ import DashboardNavbar from "@/components/dashboard-navbar";
 import ManageSubscription from "@/components/manage-subscription";
 import { SubscriptionCheck } from "@/components/subscription-check";
 import CoverLetterGenerator from "@/components/CoverLetterGenerator";
+import EarlyBirdBanner from "@/components/early-bird-banner";
 import {
   FileText,
   TrendingUp,
@@ -101,8 +102,12 @@ export default async function Dashboard() {
     thisMonth: getThisMonthCount(letters)
   };
 
+  // Determine user status for banner
+  const userStatus = subscription ? 'pro' : 'free';
+
   return (
     <SubscriptionCheck>
+      <EarlyBirdBanner userStatus={userStatus} />
       <DashboardNavbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">

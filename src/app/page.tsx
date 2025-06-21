@@ -8,6 +8,7 @@ import HowItWorks from "@/components/how-it-works";
 import ComingSoon from "@/components/coming-soon";
 import WaitlistForm from "@/components/waitlist-form";
 import PricingServer from "@/components/pricing-server";
+import EarlyBirdBanner from "@/components/early-bird-banner";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -15,8 +16,24 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Determine user status for banner
+  let userStatus: 'guest' | 'free' | 'pro' = 'guest';
+  
+  if (user) {
+    // Check if user has active subscription
+    const { data: subscription } = await supabase
+      .from("subscriptions")
+      .select("status")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+    
+    userStatus = subscription ? 'pro' : 'free';
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <EarlyBirdBanner userStatus={userStatus} />
       <Navbar />
       {/* Hero Section */}
       <Hero />

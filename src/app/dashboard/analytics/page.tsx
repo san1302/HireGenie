@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../../../supabase/server";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { SubscriptionCheck } from "@/components/subscription-check";
+import EarlyBirdBanner from "@/components/early-bird-banner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,16 @@ export default async function AnalyticsPage() {
   }
 
   const letters = coverLetters || [];
+
+  // Check subscription status for banner
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  const userStatus = subscription ? 'pro' : 'free';
 
   // Calculate analytics metrics
   const calculateMetrics = () => {
@@ -116,6 +127,7 @@ export default async function AnalyticsPage() {
 
   return (
     <SubscriptionCheck>
+      <EarlyBirdBanner userStatus={userStatus} />
       <DashboardNavbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="container-responsive mobile-padding mobile-spacing">

@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../../../supabase/server";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { SubscriptionCheck } from "@/components/subscription-check";
+import EarlyBirdBanner from "@/components/early-bird-banner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { 
   Settings as SettingsIcon, 
   User,
@@ -15,7 +20,11 @@ import {
   Trash2,
   Mail,
   Globe,
-  Lock
+  Lock,
+  Eye,
+  EyeOff,
+  Save,
+  AlertTriangle
 } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -37,8 +46,11 @@ export default async function SettingsPage() {
     .eq("status", "active")
     .maybeSingle();
 
+  const userStatus = subscription ? 'pro' : 'free';
+
   return (
     <SubscriptionCheck>
+      <EarlyBirdBanner userStatus={userStatus} />
       <DashboardNavbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="container-responsive mobile-padding space-y-8">

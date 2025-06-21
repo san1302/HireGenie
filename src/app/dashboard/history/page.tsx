@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../../../supabase/server";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { SubscriptionCheck } from "@/components/subscription-check";
+import EarlyBirdBanner from "@/components/early-bird-banner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ interface CoverLetter {
   resume_filename: string | null;
   tone: string;
   ats_score: number | null;
+  ats_analysis: any;
   created_at: string;
 }
 
@@ -39,8 +41,8 @@ export default async function HistoryPage() {
     return redirect("/sign-in");
   }
 
-  // Fetch user's cover letter history
-  const { data: coverLetters, error } = await supabase
+  // Get user's cover letters
+  const { data: letters, error } = await supabase
     .from("cover_letters")
     .select("*")
     .eq("user_id", user.id)
@@ -50,21 +52,34 @@ export default async function HistoryPage() {
     console.error("Error fetching cover letters:", error);
   }
 
-  const letters = coverLetters || [];
+  const coverLetters = (letters || []) as CoverLetter[];
 
-  // Calculate summary stats
-  const totalLetters = letters.length;
-  const avgScore = letters.length > 0 
-    ? Math.round(letters.filter(l => l.ats_score).reduce((acc, l) => acc + (l.ats_score || 0), 0) / letters.filter(l => l.ats_score).length) || 0
-    : 0;
-  const thisMonth = letters.filter(l => {
-    const date = new Date(l.created_at);
+  // Calculate stats
+  const totalLetters = coverLetters.length;
+  const thisMonth = coverLetters.filter(letter => {
+    const letterDate = new Date(letter.created_at);
     const now = new Date();
-    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    return letterDate.getMonth() === now.getMonth() && 
+           letterDate.getFullYear() === now.getFullYear();
   }).length;
+
+  const averageScore = coverLetters.length > 0 
+    ? Math.round(coverLetters.reduce((sum, letter) => sum + (letter.ats_score || 0), 0) / coverLetters.length)
+    : 0;
+
+  // Check subscription status for banner
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  const userStatus = subscription ? 'pro' : 'free';
 
   return (
     <SubscriptionCheck>
+      <EarlyBirdBanner userStatus={userStatus} />
       <DashboardNavbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="container-responsive mobile-padding mobile-spacing">
@@ -118,7 +133,7 @@ export default async function HistoryPage() {
                 <Target className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{avgScore}/100</div>
+                <div className="text-2xl font-bold text-gray-900">{averageScore}/100</div>
                 <p className="text-xs text-gray-500">Performance rating</p>
               </CardContent>
             </Card>
@@ -164,27 +179,17 @@ export default async function HistoryPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {letters.length > 0 ? (
+                  {coverLetters.length > 0 ? (
                     <div className="space-y-4">
-                      {letters.map((letter) => (
+                      {coverLetters.map((letter: CoverLetter) => (
                         <CoverLetterCard key={letter.id} letter={letter} />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No cover letters yet
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        Generate your first cover letter to see it here
-                      </p>
-                      <Button asChild>
-                        <a href="/dashboard">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Generate Cover Letter
-                        </a>
-                      </Button>
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No cover letters yet</p>
+                      <p className="text-sm">Start generating your first cover letter to see your history here.</p>
                     </div>
                   )}
                 </CardContent>
@@ -200,34 +205,38 @@ export default async function HistoryPage() {
                   <CardTitle className="text-lg text-gray-900">Quick Stats</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Best ATS Score</span>
-                    <span className="font-medium">
-                      {letters.length > 0 && letters.some(l => l.ats_score) 
-                        ? Math.max(...letters.filter(l => l.ats_score).map(l => l.ats_score!))
-                        : 'N/A'
-                      }/100
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Most Used Tone</span>
-                    <span className="font-medium capitalize">
-                      {letters.length > 0 
-                        ? letters.reduce((acc, curr) => 
-                            letters.filter(l => l.tone === acc).length >= letters.filter(l => l.tone === curr.tone).length ? acc : curr.tone
-                          , letters[0].tone)
-                        : 'None'
-                      }
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Last Generated</span>
-                    <span className="font-medium">
-                      {letters.length > 0 
-                        ? new Date(letters[0].created_at).toLocaleDateString()
-                        : 'Never'
-                      }
-                    </span>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                      <span className="text-gray-600">Best ATS Score</span>
+                      <span className="font-medium">
+                        {coverLetters.length > 0 && coverLetters.some(l => l.ats_score) 
+                          ? Math.max(...coverLetters.filter(l => l.ats_score).map(l => l.ats_score!))
+                          : 'N/A'
+                        }/100
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                      <span className="text-gray-600">Most Used Tone</span>
+                      <span className="font-medium capitalize">
+                        {coverLetters.length > 0 
+                          ? coverLetters.reduce((acc, curr) => 
+                              coverLetters.filter(l => l.tone === acc).length >= coverLetters.filter(l => l.tone === curr.tone).length ? acc : curr.tone
+                            , coverLetters[0].tone)
+                          : 'None'
+                        }
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                      <span className="text-gray-600">Last Generated</span>
+                      <span className="font-medium">
+                        {coverLetters.length > 0 
+                          ? new Date(coverLetters[0].created_at).toLocaleDateString()
+                          : 'Never'
+                        }
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
