@@ -238,75 +238,67 @@ export default async function Dashboard() {
                       </div>
                       <div>
                         <div className="text-3xl font-bold text-gray-900">{stats.thisMonth}</div>
-                        <p className="text-sm font-medium text-gray-700">Generated this month</p>
+                        <p className="text-sm font-medium text-gray-700">Letters this month</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Primary</div>
-                      <div className="text-xs text-blue-600 font-medium">Most Recent</div>
+                      <div className="text-xs text-blue-600 font-medium mb-1">
+                        {isFreePlan ? `${usageResult.remainingCount} left` : 'Unlimited'}
+                      </div>
+                      <Link href="#generate">
+                        <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white min-h-[36px]">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Create
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Secondary Stats - Compact List */}
+              {/* Secondary Stats - Compact & Minimal */}
               <Card className="border-0 shadow-sm bg-white/90 backdrop-blur-sm">
                 <CardContent className="p-4">
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {/* Last Activity */}
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                          <Clock className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Last Activity</p>
-                          <p className="text-xs text-gray-500">Recent generation</p>
-                        </div>
+                    <div className="text-center">
+                      <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
+                        <Clock className="h-4 w-4 text-green-600" />
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">{stats.lastGenerated}</div>
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{stats.lastGenerated}</div>
+                      <p className="text-xs text-gray-500">Last created</p>
                     </div>
-
-                    <div className="border-t border-gray-100"></div>
 
                     {/* ATS Score */}
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                          <TrendingUp className="h-4 w-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Average ATS Score</p>
-                          <p className="text-xs text-gray-500">Compatibility rate</p>
-                        </div>
+                    <div className="text-center">
+                      <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-2">
+                        <TrendingUp className="h-4 w-4 text-purple-600" />
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">{stats.successRate}</div>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-100"></div>
-
-                    {/* Total Generated */}
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                          <Award className="h-4 w-4 text-yellow-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Total Generated</p>
-                          <p className="text-xs text-gray-500">All time count</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">{stats.coverLettersGenerated}</div>
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{stats.successRate}</div>
+                      <p className="text-xs text-gray-500">Avg. ATS score</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Mobile Call-to-Action */}
+              {stats.thisMonth === 0 && (
+                <Card className="border-0 shadow-sm bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+                  <CardContent className="px-4 pt-4 pb-5 text-center">
+                    <div className="mb-3">
+                      <Sparkles className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                      <h3 className="text-sm font-semibold text-gray-900">Ready to get started?</h3>
+                      <p className="text-xs text-gray-600">Create your first cover letter in under 2 minutes</p>
+                    </div>
+                    <Link href="#generate">
+                      <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium min-h-[44px]">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Create Your First Letter
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 
@@ -322,18 +314,6 @@ export default async function Dashboard() {
               </Card>
             </div>
           </div>
-        </div>
-
-        {/* Mobile Floating Action Button */}
-        <div className="fixed bottom-6 right-6 sm:hidden z-40">
-          <Link href="#generate">
-            <Button
-              size="lg"
-              className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 touch-target"
-            >
-              <Plus className="h-6 w-6 text-white" />
-            </Button>
-          </Link>
         </div>
       </div>
     </SubscriptionCheck>
