@@ -8,8 +8,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "HireGenie - AI Cover Letter Generator",
-  description: "Generate personalized cover letters with AI",
+  title: "HireGenie - Get More Interviews with AI-Powered Cover Letters",
+  description: "Create ATS-optimized, personalized cover letters in under 2 minutes. AI analyzes your resume and job descriptions to generate professional letters that land interviews.",
   icons: {
     icon: [
       {
