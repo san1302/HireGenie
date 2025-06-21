@@ -72,6 +72,15 @@ import {
 } from './CoverLetterGenerator/helpers';
 import { AIAnalysisResponse } from './CoverLetterGenerator/types';
 
+// Utility function to format score values - same as in other components
+const formatScore = (value: unknown): string => {
+  const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+  if (isNaN(numValue)) return '0';
+  
+  // Round to 1 decimal place if there's a meaningful decimal, otherwise show as integer
+  return numValue % 1 === 0 ? Math.round(numValue).toString() : numValue.toFixed(1);
+};
+
 export default function CoverLetterGenerator({ userUsage, hasActiveSubscription }: CoverLetterGeneratorProps) {
   // Basic form state
   const [activeTab, setActiveTab] = useState<ActiveTab>("upload");
@@ -1373,16 +1382,16 @@ John Smith`;
                               <div className="space-y-4">
                                 <div className="flex items-center justify-center">
                                   <div className={`text-4xl font-bold ${getScoreColor(atsAnalysis.overallScore || 0)}`}>
-                                    {atsAnalysis.overallScore || 0}/100
+                                    {formatScore(atsAnalysis.overallScore || 0)}/100
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                                    <div className="text-lg font-semibold text-gray-900">{atsAnalysis.breakdown?.keywordMatch || 0}%</div>
+                                    <div className="text-lg font-semibold text-gray-900">{formatScore(atsAnalysis.breakdown?.keywordMatch || 0)}%</div>
                                     <div className="text-xs text-gray-600">Keyword Match</div>
                                   </div>
                                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                                    <div className="text-lg font-semibold text-gray-900">{atsAnalysis.breakdown?.formatCompatibility || 0}%</div>
+                                    <div className="text-lg font-semibold text-gray-900">{formatScore(atsAnalysis.breakdown?.formatCompatibility || 0)}%</div>
                                     <div className="text-xs text-gray-600">Format Score</div>
                                   </div>
                                 </div>

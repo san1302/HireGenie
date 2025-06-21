@@ -57,7 +57,7 @@ export default function PricingCard({
       console.log("🔍 CHECKOUT DEBUG - User ID being sent:", user.id);
 
       // Temporary debugging alert
-      alert(`DEBUG: Sending user_id: ${user.id} (type: ${typeof user.id})`);
+      // alert(`DEBUG: Sending user_id: ${user.id} (type: ${typeof user.id})`);
 
       const { data, error } = await supabase.functions.invoke(
         "supabase-functions-create-checkout",

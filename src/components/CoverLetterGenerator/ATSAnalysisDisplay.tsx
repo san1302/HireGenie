@@ -17,6 +17,15 @@ interface ATSAnalysisDisplayProps {
   setShowATSDetails: (show: boolean) => void;
 }
 
+// Utility function to format score values
+const formatScore = (value: unknown): string => {
+  const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+  if (isNaN(numValue)) return '0';
+  
+  // Round to 1 decimal place if there's a meaningful decimal, otherwise show as integer
+  return numValue % 1 === 0 ? Math.round(numValue).toString() : numValue.toFixed(1);
+};
+
 export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
   atsAnalysis,
   showATSDetails,
@@ -91,7 +100,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
         <div className="mb-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>Overall ATS Score</span>
-            <span>{atsAnalysis.overallScore}%</span>
+            <span>{formatScore(atsAnalysis.overallScore)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div
@@ -113,7 +122,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
                     style={{ width: `${atsAnalysis.breakdown.parseability}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.parseability}</span>
+                <span className="text-sm font-medium w-8">{formatScore(atsAnalysis.breakdown.parseability)}</span>
               </div>
             </div>
 
@@ -126,7 +135,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
                     style={{ width: `${atsAnalysis.breakdown.keywordMatch}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.keywordMatch}</span>
+                <span className="text-sm font-medium w-8">{formatScore(atsAnalysis.breakdown.keywordMatch)}</span>
               </div>
             </div>
 
@@ -139,7 +148,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
                     style={{ width: `${atsAnalysis.breakdown.skillsAlignment}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.skillsAlignment}</span>
+                <span className="text-sm font-medium w-8">{formatScore(atsAnalysis.breakdown.skillsAlignment)}</span>
               </div>
             </div>
 
@@ -152,7 +161,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
                     style={{ width: `${atsAnalysis.breakdown.formatCompatibility}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.formatCompatibility}</span>
+                <span className="text-sm font-medium w-8">{formatScore(atsAnalysis.breakdown.formatCompatibility)}</span>
               </div>
             </div>
 
@@ -165,7 +174,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
                     style={{ width: `${atsAnalysis.breakdown.contactInfo}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.contactInfo}</span>
+                <span className="text-sm font-medium w-8">{formatScore(atsAnalysis.breakdown.contactInfo)}</span>
               </div>
             </div>
 
@@ -178,7 +187,7 @@ export const ATSAnalysisDisplay: React.FC<ATSAnalysisDisplayProps> = ({
                     style={{ width: `${atsAnalysis.breakdown.bonusFeatures}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium w-8">{atsAnalysis.breakdown.bonusFeatures}</span>
+                <span className="text-sm font-medium w-8">{formatScore(atsAnalysis.breakdown.bonusFeatures)}</span>
               </div>
             </div>
           </div>
