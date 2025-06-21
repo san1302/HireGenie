@@ -205,7 +205,7 @@ export default function PricingCard({
           </div>
           <p className="text-gray-600 h-12 flex items-center">
             {isPremium ? "Ultimate value with lifetime access" : 
-             isPopular ? "Most popular choice for professionals" : 
+             isPopular ? "For serious job seekers who want results" : 
              "Great for getting started"}
           </p>
         </div>

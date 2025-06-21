@@ -102,7 +102,12 @@ export default async function Pricing() {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-stretch">
+                    <div className={`grid grid-cols-1 gap-8 max-w-7xl mx-auto items-stretch ${
+                        // If 2 cards or less, center them but keep left-aligned
+                        (1 + (sortedPlans?.length || 0)) <= 2 
+                            ? 'md:flex md:justify-center md:max-w-4xl' 
+                            : 'md:grid-cols-3'
+                    }`}>
                         {/* Free Plan - Always first */}
                         <div className="group relative">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-200 to-slate-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
@@ -127,7 +132,7 @@ export default async function Pricing() {
                                             <span className="text-5xl font-bold text-gray-900">$0</span>
                                             <span className="text-gray-500 ml-2 text-lg">/forever</span>
                                         </div>
-                                        <p className="text-gray-600 h-12 flex items-center">Perfect for occasional job seekers</p>
+                                        <p className="text-gray-600 h-12 flex items-center">Perfect for your first interview wins</p>
                                     </div>
                                     
                                     {/* Features section - flexible height */}
@@ -138,7 +143,7 @@ export default async function Pricing() {
                                                     <Check className="w-4 h-4 text-gray-600" />
                                                 </div>
                                                 <span className="text-gray-700 font-medium leading-relaxed">
-                                                    <span className="font-semibold">2 cover letters</span> per month
+                                                    <span className="font-semibold">2 ATS-optimized letters</span> monthly
                                                 </span>
                                             </li>
                                             <li className="flex items-start gap-3">
@@ -146,7 +151,7 @@ export default async function Pricing() {
                                                     <Check className="w-4 h-4 text-gray-600" />
                                                 </div>
                                                 <span className="text-gray-700 font-medium leading-relaxed">
-                                                    <span className="font-semibold">Basic templates</span>
+                                                    <span className="font-semibold">Real-time ATS score</span> (0-100%)
                                                 </span>
                                             </li>
                                             <li className="flex items-start gap-3">
@@ -154,7 +159,23 @@ export default async function Pricing() {
                                                     <Check className="w-4 h-4 text-gray-600" />
                                                 </div>
                                                 <span className="text-gray-700 font-medium leading-relaxed">
-                                                    <span className="font-semibold">Standard</span> export options
+                                                    <span className="font-semibold">Essential improvement</span> tips
+                                                </span>
+                                            </li>
+                                            <li className="flex items-start gap-3">
+                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <Check className="w-4 h-4 text-gray-600" />
+                                                </div>
+                                                <span className="text-gray-700 font-medium leading-relaxed">
+                                                    <span className="font-semibold">Proven templates</span>
+                                                </span>
+                                            </li>
+                                            <li className="flex items-start gap-3">
+                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <Check className="w-4 h-4 text-gray-600" />
+                                                </div>
+                                                <span className="text-gray-700 font-medium leading-relaxed">
+                                                    <span className="font-semibold">Standard export</span> options
                                                 </span>
                                             </li>
                                             <li className="flex items-start gap-3">

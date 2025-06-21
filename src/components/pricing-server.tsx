@@ -101,7 +101,12 @@ export default async function PricingServer() {
                     </p>
                 </div>
 
-                <div className="space-y-6 sm:space-y-8 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-8 max-w-7xl mx-auto items-stretch">
+                <div className={`space-y-6 sm:space-y-8 lg:space-y-0 max-w-7xl mx-auto items-stretch ${
+                    // If 2 cards or less, center them but keep left-aligned
+                    (1 + (sortedPlans?.length || 0)) <= 2 
+                        ? 'lg:flex lg:justify-center lg:gap-8 lg:max-w-4xl' 
+                        : 'lg:grid lg:grid-cols-3 lg:gap-8'
+                }`}>
                     {/* Free Plan - Always first */}
                     <div className="group relative">
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-200 to-slate-200 rounded-3xl blur opacity-60 group-hover:opacity-80 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
@@ -126,7 +131,7 @@ export default async function PricingServer() {
                                         <span className="text-4xl sm:text-5xl font-bold text-gray-900">$0</span>
                                         <span className="text-gray-500 ml-2 text-base sm:text-lg">/forever</span>
                                     </div>
-                                    <p className="text-gray-600 text-sm sm:text-base">Perfect for occasional job seekers</p>
+                                    <p className="text-gray-600 text-sm sm:text-base">Perfect for your first interview wins</p>
                                 </div>
                                 
                                 {/* Features section - flexible height */}
@@ -137,7 +142,7 @@ export default async function PricingServer() {
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
                                             <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
-                                                <span className="font-semibold">2 cover letters</span> per month
+                                                <span className="font-semibold">2 ATS-optimized letters</span> monthly
                                             </span>
                                         </li>
                                         <li className="flex items-start gap-3">
@@ -145,7 +150,7 @@ export default async function PricingServer() {
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
                                             <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
-                                                <span className="font-semibold">Basic templates</span>
+                                                <span className="font-semibold">Real-time ATS score</span> (0-100%)
                                             </span>
                                         </li>
                                         <li className="flex items-start gap-3">
@@ -153,10 +158,26 @@ export default async function PricingServer() {
                                                 <Check className="w-4 h-4 text-gray-600" />
                                             </div>
                                             <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
-                                                <span className="font-semibold">Standard</span> export options
+                                                <span className="font-semibold">Essential improvement</span> tips
                                             </span>
                                         </li>
-                                        {/* Show 4th feature only on sm+ screens */}
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
+                                                <span className="font-semibold">Proven templates</span>
+                                            </span>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-4 h-4 text-gray-600" />
+                                            </div>
+                                            <span className="text-gray-700 font-medium leading-relaxed text-sm sm:text-base">
+                                                <span className="font-semibold">Standard export</span> options
+                                            </span>
+                                        </li>
+                                        {/* Show 6th feature only on sm+ screens */}
                                         <li className="hidden sm:flex items-start gap-3">
                                             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                 <Check className="w-4 h-4 text-gray-600" />
