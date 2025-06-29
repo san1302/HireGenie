@@ -1,6 +1,7 @@
 // src/app/api/polar/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../supabase/server";
+import crypto from "crypto";
 
 const storeWebhookEvent = async (supabase: any, body: any) => {
     try {
@@ -29,11 +30,15 @@ const storeWebhookEvent = async (supabase: any, body: any) => {
 const webhookHandler = async (body: any) => {
     const supabase = await createClient();
 
-    // Add detailed logging for debugging
-    console.log("🔍 WEBHOOK DEBUG - Full body:", JSON.stringify(body, null, 2));
-    console.log("🔍 WEBHOOK DEBUG - Event type:", body.type);
-    console.log("🔍 WEBHOOK DEBUG - Metadata:", JSON.stringify(body.data?.metadata, null, 2));
-    console.log("🔍 WEBHOOK DEBUG - User ID from metadata:", body.data?.metadata?.user_id);
+    // Secure logging - avoid logging sensitive data in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (!isProduction) {
+        console.log("🔍 WEBHOOK DEBUG - Event type:", body.type);
+        console.log("🔍 WEBHOOK DEBUG - Event ID:", body.data?.id);
+        console.log("🔍 WEBHOOK DEBUG - User ID:", body.data?.metadata?.user_id);
+    } else {
+        console.log("📥 Processing webhook:", { type: body.type, id: body.data?.id });
+    }
 
     switch (body.type) {
         case 'subscription.created':
@@ -196,12 +201,105 @@ const webhookHandler = async (body: any) => {
     }
 }
 
+/**
+ * Verify webhook signature from Polar
+ * @param payload - The raw request body as string
+ * @param signature - The signature from the webhook header
+ * @param secret - The webhook secret from environment variables
+ * @returns boolean indicating if signature is valid
+ */
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+    if (!signature || !secret) {
+        console.error('Missing signature or secret for webhook verification');
+        return false;
+    }
+
+    try {
+        // Polar uses HMAC SHA-256 with signature format: sha256=<hash>
+        const expectedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(payload, 'utf8')
+            .digest('hex');
+        
+        // Remove 'sha256=' prefix if present
+        const receivedSignature = signature.startsWith('sha256=') 
+            ? signature.slice(7) 
+            : signature;
+
+        // Use timing-safe comparison to prevent timing attacks
+        return crypto.timingSafeEqual(
+            Buffer.from(expectedSignature, 'hex'),
+            Buffer.from(receivedSignature, 'hex')
+        );
+    } catch (error) {
+        console.error('Error verifying webhook signature:', error);
+        return false;
+    }
+}
+
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
     let eventId: string | null = null;
 
     try {
-        const body = await req.json();
+        // Get the webhook secret from environment variables
+        const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+        if (!webhookSecret) {
+            console.error('POLAR_WEBHOOK_SECRET environment variable not set');
+            return NextResponse.json(
+                { error: 'Webhook secret not configured' }, 
+                { status: 500 }
+            );
+        }
+
+        // Get the raw body for signature verification
+        const rawBody = await req.text();
+        const signature = req.headers.get('webhook-signature') || req.headers.get('x-signature');
+        
+        if (!signature) {
+            console.error('Missing webhook signature header');
+            return NextResponse.json(
+                { error: 'Missing signature' }, 
+                { status: 401 }
+            );
+        }
+
+        // Verify the webhook signature
+        const isValidSignature = verifyWebhookSignature(rawBody, signature, webhookSecret);
+        if (!isValidSignature) {
+            console.error('Invalid webhook signature - potential security threat');
+            return NextResponse.json(
+                { error: 'Invalid signature' }, 
+                { status: 401 }
+            );
+        }
+
+        // Parse the JSON body after signature verification
+        const body = JSON.parse(rawBody);
+
+        // Additional security: Validate timestamp to prevent replay attacks
+        const timestamp = req.headers.get('webhook-timestamp');
+        if (timestamp) {
+            const webhookTime = parseInt(timestamp, 10);
+            const currentTime = Math.floor(Date.now() / 1000);
+            const timeDifference = Math.abs(currentTime - webhookTime);
+            
+            // Reject webhooks older than 5 minutes (300 seconds)
+            if (timeDifference > 300) {
+                console.error('Webhook timestamp too old - potential replay attack');
+                return NextResponse.json(
+                    { error: 'Request too old' }, 
+                    { status: 401 }
+                );
+            }
+        }
+
+        // Log successful verification (but not the full body for security)
+        console.log('✅ Webhook signature verified successfully', {
+            eventType: body.type,
+            eventId: body.data?.id,
+            timestamp: new Date().toISOString()
+        });
 
         // Store the incoming webhook event
         const eventData = await storeWebhookEvent(supabase, body);
@@ -216,7 +314,7 @@ export async function POST(req: NextRequest) {
 
         // Update event status to error
         if (eventId) {
-            await storeWebhookEvent(supabase, req.body);
+            await storeWebhookEvent(supabase, { error: error instanceof Error ? error.message : 'Unknown error' });
         }
 
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
