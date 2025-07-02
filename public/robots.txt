@@ -1,0 +1,30 @@
+# HireGenie Robots.txt
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Allow crawling of important pages
+Allow: /pricing
+Allow: /dashboard
+Allow: /sign-in
+Allow: /sign-up
+
+# Disallow sensitive or unnecessary pages
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /reset-password/
+Disallow: /success/
+
+# Allow crawling of static assets
+Allow: /images/
+Allow: /favicon.svg
+Allow: /*.css
+Allow: /*.js
+
+# Sitemap location (will be created in next step)
+Sitemap: https://hiregenie.io/sitemap.xml
+
+# Crawl-delay to be respectful to server resources
+Crawl-delay: 1
