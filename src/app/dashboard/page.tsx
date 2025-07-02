@@ -21,6 +21,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard - HireGenie | AI Cover Letter Generator",
+  description: "Generate ATS-optimized cover letters, track your applications, and monitor your job search progress with AI-powered insights.",
+  keywords: ["dashboard", "cover letter generator", "ATS optimization", "job search tracking", "application management"],
+  robots: {
+    index: false,
+    follow: false,
+  },
+  alternates: {
+    canonical: "/dashboard",
+  },
+};
 
 export default async function Dashboard() {
   const supabase = await createClient();

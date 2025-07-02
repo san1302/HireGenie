@@ -5,6 +5,34 @@ import { checkUserSubscription } from "@/app/actions";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Pricing Plans - HireGenie | AI Cover Letter Generator",
+  description: "Choose the perfect plan for your job search. Start free with 2 ATS-optimized cover letters monthly, or upgrade to Pro for unlimited access and advanced features.",
+  keywords: ["pricing", "plans", "AI cover letter pricing", "job search tools cost", "ATS optimization pricing", "cover letter generator plans"],
+  alternates: {
+    canonical: "/pricing",
+  },
+  openGraph: {
+    title: "Pricing Plans - HireGenie | AI Cover Letter Generator",
+    description: "Choose the perfect plan for your job search. Start free with 2 ATS-optimized cover letters monthly, or upgrade to Pro for unlimited access and advanced features.",
+    url: "https://hiregenie.io/pricing",
+    images: [
+      {
+        url: "/og-image-pricing.png",
+        width: 1200,
+        height: 630,
+        alt: "HireGenie Pricing Plans",
+      },
+    ],
+  },
+  twitter: {
+    title: "Pricing Plans - HireGenie | AI Cover Letter Generator",
+    description: "Choose the perfect plan for your job search. Start free with 2 ATS-optimized cover letters monthly, or upgrade to Pro for unlimited access and advanced features.",
+    images: ["/twitter-image-pricing.png"],
+  },
+};
 
 export default async function Pricing() {
     const supabase = await createClient();
