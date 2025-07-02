@@ -4,6 +4,7 @@ import "./globals.css";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { TempoInit } from "@/components/tempo-init";
 import { ThemeProvider } from "@/components/theme-provider";
+import SchemaMarkup from "@/components/schema-markup";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -74,6 +75,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <SchemaMarkup />
+      </head>
       <body className={inter.className}>
         <PostHogProvider>
           <ThemeProvider
