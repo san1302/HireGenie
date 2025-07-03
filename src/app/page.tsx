@@ -9,6 +9,16 @@ import ComingSoon from "@/components/coming-soon";
 import WaitlistForm from "@/components/waitlist-form";
 import PricingServer from "@/components/pricing-server";
 import EarlyBirdBanner from "@/components/early-bird-banner";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "HireGenie - Get More Interviews with AI-Powered Cover Letters",
+  description: "Create ATS-optimized, personalized cover letters in under 2 minutes. AI analyzes your resume and job descriptions to generate professional letters that land interviews.",
+  keywords: ["AI cover letter generator", "ATS optimization", "job application", "resume analysis", "interview preparation", "cover letter writing", "job search automation"],
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default async function Home() {
   const supabase = await createClient();

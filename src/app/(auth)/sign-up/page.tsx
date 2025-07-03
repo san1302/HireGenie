@@ -7,6 +7,19 @@ import { SmtpMessage } from "../smtp-message";
 import { signUpAction, signUpWithGoogleAction } from "@/app/actions";
 import { GoogleOAuthButton } from "@/components/google-oauth-button";
 import Navbar from "@/components/navbar";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sign Up - HireGenie | AI Cover Letter Generator",
+  description: "Create your free HireGenie account and start generating ATS-optimized cover letters in under 2 minutes.",
+  robots: {
+    index: false,
+    follow: true,
+  },
+  alternates: {
+    canonical: "/sign-up",
+  },
+};
 
 export default async function Signup(props: {
   searchParams: Promise<Message & { returnTo?: string }>;

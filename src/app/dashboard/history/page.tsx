@@ -17,6 +17,19 @@ import {
   Search,
   Filter
 } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "History - HireGenie | Cover Letter History",
+  description: "View and manage your generated cover letters, track ATS scores, and monitor your job application history.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+  alternates: {
+    canonical: "/dashboard/history",
+  },
+};
 
 // TypeScript interfaces
 interface CoverLetter {

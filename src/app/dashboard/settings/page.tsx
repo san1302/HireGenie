@@ -26,6 +26,19 @@ import {
   Save,
   AlertTriangle
 } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Settings - HireGenie | Account Settings",
+  description: "Manage your account preferences, subscription settings, and privacy options.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+  alternates: {
+    canonical: "/dashboard/settings",
+  },
+};
 
 export default async function SettingsPage() {
   const supabase = await createClient();

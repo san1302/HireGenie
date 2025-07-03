@@ -18,6 +18,19 @@ import {
   Activity,
   Zap
 } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Analytics - HireGenie | Job Search Analytics",
+  description: "Track your job search performance, ATS scores, and application success metrics with detailed analytics.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+  alternates: {
+    canonical: "/dashboard/analytics",
+  },
+};
 
 export default async function AnalyticsPage() {
   const supabase = await createClient();

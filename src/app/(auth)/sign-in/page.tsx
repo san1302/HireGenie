@@ -6,6 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleOAuthButton } from "@/components/google-oauth-button";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sign In - HireGenie | AI Cover Letter Generator",
+  description: "Sign in to your HireGenie account to create ATS-optimized cover letters and track your job applications.",
+  robots: {
+    index: false,
+    follow: true,
+  },
+  alternates: {
+    canonical: "/sign-in",
+  },
+};
 
 interface LoginProps {
   searchParams: Promise<Message & { returnTo?: string }>;
