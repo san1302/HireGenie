@@ -140,7 +140,7 @@ export default function SchemaMarkup() {
 
   // Determine which schemas to include based on current page
   const getSchemas = () => {
-    const schemas = [organizationSchema];
+    const schemas: any[] = [organizationSchema];
 
     if (pathname === '/') {
       schemas.push(webApplicationSchema, softwareApplicationSchema, faqSchema, serviceSchema);
