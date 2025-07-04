@@ -60,9 +60,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly' as const,
       priority: 0.3,
     },
+    // Blog pages
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/ultimate-ats-optimization-guide-2024`,
+      lastModified: new Date('2024-01-15'),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
   ]
 
-  // Future: Add dynamic pages here (blog posts, etc.)
+  // Future blog posts can be added here
   // const dynamicPages = await getDynamicPages()
 
   return staticPages

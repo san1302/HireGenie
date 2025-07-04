@@ -5,6 +5,7 @@ import { PostHogProvider } from "@/components/PostHogProvider";
 import { TempoInit } from "@/components/tempo-init";
 import { ThemeProvider } from "@/components/theme-provider";
 import SchemaMarkup from "@/components/schema-markup";
+import Analytics from "@/components/analytics";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-site-verification-code",
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "your-google-site-verification-code",
   },
   icons: {
     icon: [
@@ -79,6 +80,7 @@ export default function RootLayout({
         <SchemaMarkup />
       </head>
       <body className={inter.className}>
+        <Analytics />
         <PostHogProvider>
           <ThemeProvider
             attribute="class"
