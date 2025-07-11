@@ -9,6 +9,7 @@ Allow: /pricing
 Allow: /dashboard
 Allow: /sign-in
 Allow: /sign-up
+Allow: /cover-letter-generator
 
 # Disallow sensitive or unnecessary pages
 Disallow: /api/

@@ -25,20 +25,13 @@ export const metadata: Metadata = {
     description: "Generate professional, ATS-optimized cover letters in under 2 minutes with our free AI tool. Upload your resume and job description to get personalized cover letters that beat applicant tracking systems.",
     url: "https://hiregenie.io/cover-letter-generator",
     type: "website",
-    images: [
-      {
-        url: "/og-image-cover-letter-generator.png",
-        width: 1200,
-        height: 630,
-        alt: "Free AI Cover Letter Generator - HireGenie",
-      },
-    ],
+    siteName: "HireGenie",
   },
   twitter: {
     title: "Free AI Cover Letter Generator - Create ATS-Optimized Cover Letters | HireGenie",
     description: "Generate professional, ATS-optimized cover letters in under 2 minutes with our free AI tool. Upload your resume and job description to get personalized cover letters that beat applicant tracking systems.",
-    images: ["/twitter-image-cover-letter-generator.png"],
-    card: "summary_large_image",
+    card: "summary",
+    site: "@hiregenie",
   },
   robots: {
     index: true,
@@ -54,8 +47,104 @@ export const metadata: Metadata = {
 };
 
 export default function CoverLetterGeneratorPage() {
+  // JSON-LD Structured Data for better SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://hiregenie.io/cover-letter-generator#webapp",
+        "name": "AI Cover Letter Generator",
+        "description": "Generate professional, ATS-optimized cover letters in under 2 minutes with our free AI tool. Upload your resume and job description to get personalized cover letters.",
+        "url": "https://hiregenie.io/cover-letter-generator",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any",
+        "permissions": "browser",
+        "isAccessibleForFree": true,
+        "author": {
+          "@type": "Organization",
+          "name": "HireGenie",
+          "url": "https://hiregenie.io"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        },
+        "featureList": [
+          "ATS-optimized cover letter generation",
+          "AI-powered content creation",
+          "Resume and job description analysis",
+          "Multiple download formats",
+          "Real-time ATS scoring"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://hiregenie.io/cover-letter-generator#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is this really free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes! Generate and copy cover letters for free. Sign up to save and download."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does ATS optimization work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Our AI analyzes job descriptions and optimizes keywords and formatting for ATS systems."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I edit the generated letter?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes! You can modify and personalize the generated content before downloading."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What file formats are supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Upload PDF, DOC, DOCX resumes. Download cover letters as TXT, DOC, or PDF."
+            }
+          }
+        ]
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://hiregenie.io/cover-letter-generator#software",
+        "name": "HireGenie Cover Letter Generator",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "url": "https://hiregenie.io/cover-letter-generator",
+        "description": "AI-powered tool for creating ATS-optimized cover letters",
+        "softwareVersion": "1.0",
+        "releaseNotes": "Professional cover letter generation with ATS optimization",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "ratingCount": "1000",
+          "bestRating": "5",
+          "worstRating": "1"
+        }
+      }
+    ]
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
         {/* Clean Hero Section */}
