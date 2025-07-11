@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createClient } from "../../supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { 
   Upload, 
   FileText, 
@@ -76,7 +77,7 @@ export default function CoverLetterGeneratorPublic() {
   const supabase = createClient();
 
   // Auth state
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Form state
@@ -133,7 +134,8 @@ export default function CoverLetterGeneratorPublic() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
       if (event === 'SIGNED_IN') {
-        trackSignUp(session?.user?.app_metadata?.provider || 'email');
+        const provider = session?.user?.app_metadata?.provider;
+        trackSignUp(provider === 'google' ? 'google' : 'email');
       }
     });
 
