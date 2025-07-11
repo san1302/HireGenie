@@ -60,6 +60,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly' as const,
       priority: 0.3,
     },
+    // Public tool pages
+    {
+      url: `${baseUrl}/cover-letter-generator`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly' as const,
+      priority: 1.0,
+    },
     // Blog pages
     {
       url: `${baseUrl}/blog`,
